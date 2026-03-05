@@ -135,7 +135,47 @@
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:12px 24px;font-weight:700;font-size:.95rem;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
   #toast.show{opacity:1;}
 
-  @media(max-width:600px){.categories-grid{grid-template-columns:1fr 1fr}.login-wrap{padding:28px 20px}}
+  /* SUPER ADMIN PANEL */
+  #sa-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(500px,95vw);background:var(--card);border:1.5px solid rgba(245,166,35,.4);border-radius:24px;padding:28px;z-index:1000;display:none;box-shadow:0 30px 80px rgba(0,0,0,.7);}
+  #sa-panel h2{font-family:'Fredoka One',cursive;color:var(--gold);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  #sa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:none;}
+  .sa-user-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07);}
+  .sa-user-row:last-child{border-bottom:none;}
+  .sa-uname{flex:1;font-weight:700;font-size:.9rem;}
+  .sa-pwd{color:var(--soft);font-size:.8rem;font-family:monospace;}
+  .sa-edit-btn{background:rgba(79,195,247,.15);border:1px solid rgba(79,195,247,.3);color:var(--blue);border-radius:8px;padding:4px 10px;font-size:.75rem;font-weight:700;cursor:pointer;}
+  .sa-del-btn{background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.3);color:var(--accent);border-radius:8px;padding:4px 10px;font-size:.75rem;font-weight:700;cursor:pointer;}
+  .sa-input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.9rem;margin-bottom:8px;}
+  .sa-input:focus{outline:none;border-color:var(--gold);}
+  .sa-error{background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.4);border-radius:8px;padding:8px 12px;color:#ff8fa3;font-size:.82rem;font-weight:700;margin-bottom:10px;display:none;}
+
+  /* ACTIVITY DOT */
+  .activity-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(0,0,0,.3);}
+  .dot-active{background:#4ecb71;}
+  .dot-away{background:#e94560;}
+
+  /* CHAT */
+  #chat-panel{position:fixed;bottom:20px;right:20px;width:300px;z-index:500;display:none;flex-direction:column;gap:0;}
+  #chat-panel.chat-open #chat-body{display:flex;}
+  #chat-toggle{background:var(--card);border:1px solid rgba(255,255,255,.15);border-radius:50px;padding:10px 20px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;font-size:.9rem;color:var(--text);display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.4);align-self:flex-end;}
+  #chat-toggle .chat-badge{background:var(--accent);color:white;border-radius:50%;width:18px;height:18px;font-size:.7rem;display:none;align-items:center;justify-content:center;}
+  #chat-body{flex-direction:column;background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:16px 16px 0 0;overflow:hidden;box-shadow:0 -4px 30px rgba(0,0,0,.4);margin-bottom:0;}
+  #chat-messages{height:220px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;}
+  #chat-messages::-webkit-scrollbar{width:4px;}
+  #chat-messages::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px;}
+  .chat-msg{font-size:.82rem;line-height:1.4;}
+  .chat-msg .chat-who{font-weight:800;margin-right:4px;}
+  .chat-msg .chat-time{color:rgba(255,255,255,.3);font-size:.72rem;margin-left:4px;}
+  .chat-msg.chat-me .chat-who{color:var(--blue);}
+  .chat-msg.chat-other .chat-who{color:var(--gold);}
+  .chat-msg.chat-system{color:var(--soft);font-style:italic;font-size:.78rem;}
+  #chat-input-row{display:flex;border-top:1px solid rgba(255,255,255,.08);padding:8px;}
+  #chat-input{flex:1;background:transparent;border:none;color:var(--text);font-family:'Nunito',sans-serif;font-size:.88rem;padding:4px 8px;}
+  #chat-input:focus{outline:none;}
+  #chat-send{background:var(--accent);border:none;border-radius:8px;color:white;padding:6px 12px;cursor:pointer;font-weight:800;font-size:.82rem;}
+
+  @media(max-width:600px){.categories-grid{grid-template-columns:1fr 1fr}.login-wrap{padding:28px 20px}
+    #chat-panel{width:calc(100% - 32px);right:16px;bottom:16px;}}
 </style>
 </head>
 <body>
@@ -149,6 +189,7 @@
     <div class="logo">🌍 GeoIgre</div>
     <div style="display:flex;align-items:center;gap:10px">
       <div class="user-chip"><div class="dot"></div><span id="header-uname">-</span></div>
+      <button id="sa-header-btn" onclick="openSAPanel()" style="display:none;background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.4);color:var(--gold);border-radius:50px;padding:6px 14px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;">⚙️ Korisnici</button>
       <button class="logout-btn" onclick="doLogout()">Odjavi se</button>
     </div>
   </div>
@@ -248,6 +289,10 @@
     <div style="text-align:center;margin-top:20px">
       <button class="btn btn-gold" onclick="submitAnswers()" id="btn-submit" style="font-size:1.1rem;padding:14px 40px">✅ Predaj odgovore</button>
     </div>
+    <div id="admin-change-letter" style="display:none;text-align:center;margin-top:12px">
+      <div style="color:var(--soft);font-size:.8rem;margin-bottom:8px;font-weight:700">👑 Admin — promeni slovo:</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:500px;margin:0 auto" id="letter-btns"></div>
+    </div>
     <div class="submitted-chips" id="submitted-chips"></div>
   </div>
 
@@ -270,6 +315,43 @@
   </div>
 
 </div><!-- /container -->
+
+<!-- SUPER ADMIN OVERLAY -->
+<div id="sa-overlay" onclick="closeSAPanel()"></div>
+
+<!-- SUPER ADMIN PANEL -->
+<div id="sa-panel">
+  <h2>⚙️ Upravljanje korisnicima</h2>
+  <div class="sa-error" id="sa-error"></div>
+
+  <div id="sa-users-list"></div>
+
+  <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.1)">
+    <div style="font-weight:800;font-size:.85rem;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px" id="sa-form-title">➕ Dodaj korisnika</div>
+    <input class="sa-input" id="sa-old-username" type="hidden">
+    <input class="sa-input" id="sa-new-username" placeholder="Korisničko ime" autocomplete="off">
+    <input class="sa-input" id="sa-new-password" placeholder="Lozinka" autocomplete="off">
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-gold btn-sm" onclick="saSubmitForm()" id="sa-submit-btn">➕ Dodaj</button>
+      <button class="btn btn-outline btn-sm" onclick="saResetForm()" id="sa-cancel-btn" style="display:none">✕ Otkaži</button>
+      <button class="btn btn-outline btn-sm" onclick="closeSAPanel()" style="margin-left:auto">Zatvori</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT PANEL -->
+<div id="chat-panel">
+  <div id="chat-body">
+    <div id="chat-messages"></div>
+    <div id="chat-input-row">
+      <input id="chat-input" placeholder="Poruka..." maxlength="200" autocomplete="off">
+      <button id="chat-send" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+  <button id="chat-toggle" onclick="toggleChat()">
+    💬 Chat <span class="chat-badge" id="chat-badge">0</span>
+  </button>
+</div>
 
 <script>
 // ════════════════════════════════════════════
@@ -306,6 +388,10 @@ let catScores = {};
 let timerInterval = null;
 let myAnswers = {};
 
+let chatOpen = false;
+let chatUnread = 0;
+let saKorisnici = [];
+
 // STARS
 const starsEl = document.getElementById('stars');
 for(let i=0;i<80;i++){
@@ -338,12 +424,19 @@ function handleMsg(data){
 
   if(data.type==='login_ok'){
     me.isAdmin = data.isAdmin;
+    me.isSuperAdmin = data.isSuperAdmin;
     currentAdminUser = data.adminUser;
     document.getElementById('header-uname').textContent = me.username + (me.isAdmin?' 👑':'');
     document.getElementById('home-uname').textContent = me.username;
     document.getElementById('main-header').classList.add('show');
+    document.getElementById('chat-panel').style.display='flex';
+    if(me.isSuperAdmin){
+      document.getElementById('sa-header-btn').style.display='block';
+      if(data.korisnici) saKorisnici = data.korisnici;
+    }
     showScreen('home');
-    if(me.isAdmin) toast('👑 Ti si admin jer si se prvi prijavio!','var(--gold)');
+    if(me.isAdmin) toast('👑 Ti si admin!','var(--gold)');
+    startActivityTracking();
   }
 
   if(data.type==='players'){
@@ -382,6 +475,27 @@ function handleMsg(data){
     gamePlayers=data.players; currentLetter=data.letter; roundTime=data.roundTime;
     gameRound++; submitted=new Set(); myAnswers={}; pendingRoundScores={};
     showRoundLetter();
+  }
+  if(data.type==='sa_users_update'){
+    saKorisnici = data.korisnici;
+    renderSAUsers();
+    toast('✅ Korisnici ažurirani!','var(--green)');
+  }
+  if(data.type==='sa_error'){
+    const el=document.getElementById('sa-error');
+    el.textContent=data.msg; el.style.display='block';
+    setTimeout(()=>el.style.display='none',3000);
+  }
+  if(data.type==='chat_msg'){
+    addChatMsg(data.username, data.msg, data.time);
+  }
+  if(data.type==='letter_changed'){
+    currentLetter=data.letter;
+    document.getElementById('drawn-letter').textContent=data.letter;
+    document.getElementById('writing-letter').textContent=data.letter;
+    // update placeholders
+    document.querySelectorAll('[id^=cat-]').forEach(inp=>inp.placeholder=`Na slovo ${data.letter}...`);
+    toast(`🔄 Admin je promenio slovo na: ${data.letter}`,'var(--purple)');
   }
   if(data.type==='restart'){
     totalScores={}; myLocked=false;
@@ -442,6 +556,7 @@ function updateLobbyUI(){
         ${isAdmin?'<span class="admin-badge">👑 Admin</span>':''}
         ${isMe?'<span style="color:var(--soft);font-size:.72rem;margin-left:5px">(ti)</span>':''}
       </div>
+      <div class="activity-dot ${p.active!==false?'dot-active':'dot-away'}" title="${p.active!==false?'Na tabu igre':'Van taba igre 👀'}"></div>
       <span class="status-chip ${p.locked?'chip-ready':'chip-wait'}">${p.locked?'✅ Spreman':'⏳ Čeka'}</span>
       ${adminBtns}`;
     list.appendChild(row);
@@ -520,6 +635,19 @@ function goToWriting(){
   document.getElementById('btn-submit').disabled=false;
   document.getElementById('submitted-chips').innerHTML='';
   submitted=new Set();
+  // Admin letter change panel
+  if(me.isAdmin){
+    document.getElementById('admin-change-letter').style.display='block';
+    const lb=document.getElementById('letter-btns'); lb.innerHTML='';
+    LETTER_POOL.forEach(l=>{
+      const b=document.createElement('button');
+      b.className='btn btn-sm time-btn'+(l===currentLetter?' active-time':'');
+      b.textContent=l; b.onclick=()=>{ send({type:'change_letter',letter:l}); lb.querySelectorAll('button').forEach(x=>x.classList.remove('active-time')); b.classList.add('active-time'); };
+      lb.appendChild(b);
+    });
+  } else {
+    document.getElementById('admin-change-letter').style.display='none';
+  }
   showScreen('writing');
   if(roundTime>0) startTimer();
 }
@@ -715,6 +843,119 @@ function adminNextRound(){
 }
 function adminEndGame(){ send({type:'restart'}); totalScores={}; showScreen('home'); }
 function goHome(){ showScreen('home'); }
+
+// ── CHAT ──
+function toggleChat(){
+  chatOpen=!chatOpen;
+  const panel=document.getElementById('chat-panel');
+  panel.classList.toggle('chat-open',chatOpen);
+  if(chatOpen){ chatUnread=0; updateChatBadge(); const msgs=document.getElementById('chat-messages'); msgs.scrollTop=msgs.scrollHeight; }
+}
+
+function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const msg=inp.value.trim();
+  if(!msg) return;
+  send({type:'chat_msg',username:me.username,msg});
+  inp.value='';
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('chat-input').addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat(); });
+});
+
+function addChatMsg(username, msg, time){
+  const msgs=document.getElementById('chat-messages');
+  const isMe=username===me.username;
+  const isSystem=!username;
+  const div=document.createElement('div');
+  div.className='chat-msg '+(isSystem?'chat-system':isMe?'chat-me':'chat-other');
+  if(isSystem){ div.textContent=msg; }
+  else { div.innerHTML=`<span class="chat-who">${username}:</span>${msg}<span class="chat-time">${time||''}</span>`; }
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  if(!chatOpen && !isMe){ chatUnread++; updateChatBadge(); }
+}
+
+function updateChatBadge(){
+  const b=document.getElementById('chat-badge');
+  b.style.display=chatUnread>0?'flex':'none';
+  b.textContent=chatUnread;
+}
+
+// ── SUPER ADMIN PANEL ──
+function openSAPanel(){
+  renderSAUsers();
+  document.getElementById('sa-panel').style.display='block';
+  document.getElementById('sa-overlay').style.display='block';
+}
+function closeSAPanel(){
+  document.getElementById('sa-panel').style.display='none';
+  document.getElementById('sa-overlay').style.display='none';
+  saResetForm();
+}
+
+function renderSAUsers(){
+  const list=document.getElementById('sa-users-list');
+  list.innerHTML='<div style="font-weight:800;font-size:.85rem;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">👥 Trenutni korisnici</div>';
+  saKorisnici.forEach(k=>{
+    const isSelf=k.username==='dalibor';
+    const row=document.createElement('div'); row.className='sa-user-row';
+    row.innerHTML=`
+      <span class="sa-uname">${k.username}${isSelf?' 👑':''}</span>
+      <span class="sa-pwd">🔑 ${k.password}</span>
+      ${!isSelf?`<button class="sa-edit-btn" onclick="saStartEdit('${k.username}','${k.password}')">✏️ Izmeni</button>
+      <button class="sa-del-btn" onclick="saDeleteUser('${k.username}')">🗑️</button>`:''}
+    `;
+    list.appendChild(row);
+  });
+}
+
+function saStartEdit(username, password){
+  document.getElementById('sa-form-title').textContent='✏️ Izmeni korisnika: '+username;
+  document.getElementById('sa-old-username').value=username;
+  document.getElementById('sa-new-username').value=username;
+  document.getElementById('sa-new-password').value=password;
+  document.getElementById('sa-submit-btn').textContent='💾 Sačuvaj';
+  document.getElementById('sa-cancel-btn').style.display='inline-flex';
+}
+
+function saResetForm(){
+  document.getElementById('sa-form-title').textContent='➕ Dodaj korisnika';
+  document.getElementById('sa-old-username').value='';
+  document.getElementById('sa-new-username').value='';
+  document.getElementById('sa-new-password').value='';
+  document.getElementById('sa-submit-btn').textContent='➕ Dodaj';
+  document.getElementById('sa-cancel-btn').style.display='none';
+  document.getElementById('sa-error').style.display='none';
+}
+
+function saSubmitForm(){
+  const oldUsername=document.getElementById('sa-old-username').value;
+  const newUsername=document.getElementById('sa-new-username').value.trim();
+  const newPassword=document.getElementById('sa-new-password').value.trim();
+  if(!newUsername||!newPassword){ const e=document.getElementById('sa-error'); e.textContent='Popuni sva polja!'; e.style.display='block'; return; }
+  if(oldUsername){
+    send({type:'sa_edit_user',oldUsername,newUsername,newPassword});
+  } else {
+    send({type:'sa_add_user',username:newUsername,password:newPassword});
+  }
+  saResetForm();
+}
+
+function saDeleteUser(username){
+  if(!confirm(`Obriši korisnika "${username}"? Ovo se ne može poništiti!`)) return;
+  send({type:'sa_delete_user',username});
+}
+
+// ── ACTIVITY TRACKING ──
+function startActivityTracking(){
+  function sendActivity(active){ send({type:'activity',username:me.username,active}); }
+  document.addEventListener('visibilitychange',()=>sendActivity(!document.hidden));
+  window.addEventListener('focus',()=>sendActivity(true));
+  window.addEventListener('blur',()=>sendActivity(false));
+  sendActivity(true);
+}
 
 window.addEventListener('beforeunload',()=>{ send({type:'logout',username:me.username}); });
 </script>
