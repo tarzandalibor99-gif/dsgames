@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoIgre</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--sky:#1a1a2e;--deep:#16213e;--card:#0f3460;--accent:#e94560;--gold:#f5a623;--green:#4ecb71;--blue:#4fc3f7;--purple:#b388ff;--text:#f0f0f0;--soft:#a8b2c8;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Nunito',sans-serif;background:var(--sky);color:var(--text);min-height:100vh;overflow-x:hidden;padding-top:32px;
+    background-image:radial-gradient(ellipse at 20% 10%,rgba(233,69,96,.15) 0%,transparent 50%),radial-gradient(ellipse at 80% 90%,rgba(79,195,247,.12) 0%,transparent 50%);}
+  .stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;}
+  .star{position:absolute;background:white;border-radius:50%;animation:twinkle 3s infinite alternate;}
+  @keyframes twinkle{from{opacity:.2}to{opacity:.9}}
+  .container{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:20px;}
+  .screen{display:none;animation:fadeIn .4s ease;}
+  .screen.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+  @keyframes rollIn{0%{transform:rotateY(90deg) scale(.5);opacity:0}100%{transform:rotateY(0) scale(1);opacity:1}}
+  @keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* WS BAR */
+  #wsBar{position:fixed;top:0;left:0;width:100%;padding:6px;font-size:13px;font-weight:700;text-align:center;z-index:999;}
+  #wsBar.connecting{background:#ff9800;color:white;}
+  #wsBar.connected{background:#2e7d32;color:white;}
+  #wsBar.disconnected{background:#c62828;color:white;}
+
+  /* HEADER */
+  .header{display:none;justify-content:space-between;align-items:center;padding:14px 0;margin-bottom:8px;}
+  .header.show{display:flex;}
+  .logo{font-family:'Fredoka One',cursive;font-size:1.8rem;background:linear-gradient(135deg,var(--gold),var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .user-chip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border-radius:50px;padding:6px 16px;font-weight:700;}
+  .user-chip .dot{width:8px;height:8px;background:var(--green);border-radius:50%;}
+  .logout-btn{background:rgba(233,69,96,.12);border:1px solid rgba(233,69,96,.3);color:var(--accent);border-radius:50px;padding:6px 14px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;}
+
+  /* BUTTONS */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 28px;border-radius:50px;border:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;transition:transform .15s,box-shadow .15s;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn:active{transform:translateY(0);}
+  .btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),#c0392b);color:white;box-shadow:0 4px 20px rgba(233,69,96,.4);}
+  .btn-gold{background:linear-gradient(135deg,var(--gold),#e67e22);color:white;box-shadow:0 4px 20px rgba(245,166,35,.4);}
+  .btn-green{background:linear-gradient(135deg,var(--green),#27ae60);color:white;box-shadow:0 4px 20px rgba(78,203,113,.35);}
+  .btn-blue{background:linear-gradient(135deg,var(--blue),#0288d1);color:white;box-shadow:0 4px 20px rgba(79,195,247,.35);}
+  .btn-outline{background:transparent;border:2px solid var(--soft);color:var(--soft);}
+  .btn-sm{padding:7px 16px;font-size:.82rem;}
+  .btn-xs{padding:4px 10px;font-size:.75rem;}
+  .time-btn{background:rgba(255,255,255,.07);color:var(--soft);border:1.5px solid rgba(255,255,255,.15);}
+  .time-btn.active-time{border-color:var(--blue);color:var(--blue);background:rgba(79,195,247,.1);}
+  .flex-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+
+  /* LOGIN */
+  .login-wrap{max-width:420px;margin:30px auto;background:var(--card);border-radius:24px;padding:40px 36px;border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 80px rgba(0,0,0,.5);}
+  .login-title{font-family:'Fredoka One',cursive;font-size:1.8rem;color:var(--blue);text-align:center;margin-bottom:6px;}
+  .login-sub{color:var(--soft);text-align:center;font-size:.9rem;margin-bottom:28px;}
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:.8rem;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+  .field input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);border-radius:12px;padding:13px 16px;color:var(--text);font-family:'Nunito',sans-serif;font-size:1rem;transition:border .2s;}
+  .field input:focus{outline:none;border-color:var(--blue);}
+  .error-box{background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.4);border-radius:10px;padding:10px 14px;color:#ff8fa3;font-size:.88rem;font-weight:700;margin-bottom:16px;display:none;}
+
+  /* HOME */
+  .home-welcome h2{font-family:'Fredoka One',cursive;font-size:1.6rem;margin-bottom:4px;}
+  .home-welcome p{color:var(--soft);font-size:.95rem;margin-bottom:24px;}
+  .games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;}
+  .game-card{background:var(--card);border-radius:20px;padding:24px 16px;text-align:center;border:1.5px solid rgba(255,255,255,.08);cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;position:relative;overflow:hidden;}
+  .game-card:hover{transform:translateY(-6px);box-shadow:0 16px 40px rgba(0,0,0,.4);border-color:rgba(79,195,247,.4);}
+  .game-card.locked-card{opacity:.4;cursor:not-allowed;}
+  .game-card.locked-card:hover{transform:none;box-shadow:none;}
+  .game-icon{font-size:3.5rem;margin-bottom:12px;display:block;}
+  .game-title{font-family:'Fredoka One',cursive;font-size:1.1rem;margin-bottom:4px;}
+  .game-desc{font-size:.78rem;color:var(--soft);}
+  .soon-badge{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.1);border-radius:50px;padding:2px 8px;font-size:.7rem;font-weight:700;color:var(--soft);}
+
+  /* LOBBY */
+  .card{background:var(--card);border-radius:20px;padding:24px 28px;border:1px solid rgba(255,255,255,.08);box-shadow:0 20px 60px rgba(0,0,0,.4);margin-bottom:16px;}
+  .card h2{font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--blue);margin-bottom:16px;}
+  .player-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+  .player-row:last-child{border-bottom:none;}
+  .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;flex-shrink:0;}
+  .player-row-name{flex:1;font-weight:700;font-size:.95rem;}
+  .status-chip{padding:4px 12px;border-radius:50px;font-size:.76rem;font-weight:700;white-space:nowrap;}
+  .chip-ready{background:rgba(78,203,113,.2);color:var(--green);border:1px solid rgba(78,203,113,.3);}
+  .chip-wait{background:rgba(168,178,200,.1);color:var(--soft);border:1px solid rgba(168,178,200,.2);}
+  .admin-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.3);border-radius:50px;padding:2px 9px;font-size:.72rem;font-weight:700;color:var(--gold);margin-left:5px;}
+  .kick-btn{background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.3);color:var(--accent);border-radius:50px;padding:4px 10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.74rem;cursor:pointer;transition:all .2s;white-space:nowrap;}
+  .kick-btn:hover{background:rgba(233,69,96,.3);}
+  .makeadmin-btn{background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.3);color:var(--gold);border-radius:50px;padding:4px 10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.74rem;cursor:pointer;transition:all .2s;white-space:nowrap;}
+  .makeadmin-btn:hover{background:rgba(245,166,35,.3);}
+  .waiting-notice{background:rgba(79,195,247,.08);border:1px solid rgba(79,195,247,.2);border-radius:14px;padding:16px 20px;text-align:center;color:var(--blue);font-weight:700;animation:pulse 2s infinite;}
+
+  /* LETTER */
+  .letter-display{text-align:center;margin:30px 0;}
+  .letter-circle{width:160px;height:160px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 0 60px rgba(233,69,96,.5);animation:pop .5s cubic-bezier(.34,1.56,.64,1);}
+  .letter-circle span{font-family:'Fredoka One',cursive;font-size:6rem;color:white;}
+  .rolling-letter{display:inline-block;animation:rollIn .8s cubic-bezier(.34,1.56,.64,1);}
+
+  /* WRITING */
+  .categories-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:20px 0;}
+  .category-item{background:var(--deep);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 16px;transition:border-color .2s;}
+  .category-item:focus-within{border-color:var(--blue);}
+  .category-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--soft);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .category-item input{width:100%;background:transparent;border:none;border-bottom:1.5px solid rgba(255,255,255,.15);border-radius:0;padding:4px 0;font-size:1rem;font-weight:700;color:white;}
+  .category-item input:focus{outline:none;border-bottom-color:var(--blue);}
+  .category-item input:disabled{opacity:.4;}
+  .timer-bar{background:rgba(255,255,255,.08);border-radius:50px;height:8px;margin:16px 0;overflow:hidden;}
+  .timer-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,var(--green),var(--gold),var(--accent));transition:width 1s linear;}
+  .timer-text{text-align:right;font-size:.85rem;color:var(--soft);margin-bottom:4px;font-weight:700;}
+  .submitted-chips{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+  .sub-chip{background:rgba(78,203,113,.15);border:1px solid rgba(78,203,113,.3);border-radius:50px;padding:4px 12px;font-size:.82rem;font-weight:700;color:var(--green);}
+
+  /* SCORING */
+  .answers-review{background:var(--deep);border-radius:16px;padding:20px;margin:16px 0;border:1px solid rgba(255,255,255,.07);}
+  .answers-review h3{font-size:1rem;color:var(--soft);margin-bottom:14px;font-weight:700;}
+
+  /* LEADERBOARD */
+  .leaderboard-item{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:14px;padding:16px 20px;margin-bottom:10px;border:1.5px solid rgba(255,255,255,.06);animation:slideIn .4s ease backwards;}
+  .leaderboard-item:nth-child(1){border-color:rgba(245,166,35,.4)}
+  .leaderboard-item:nth-child(2){border-color:rgba(192,192,192,.3)}
+  .leaderboard-item:nth-child(3){border-color:rgba(205,127,50,.3)}
+  .rank-badge{font-family:'Fredoka One',cursive;font-size:1.6rem;width:40px;text-align:center;}
+  .lb-name{flex:1;font-weight:800;font-size:1.1rem;}
+  .lb-score{font-family:'Fredoka One',cursive;font-size:1.8rem;color:var(--gold);}
+  .round-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border-radius:50px;padding:6px 14px;font-size:.85rem;font-weight:700;color:var(--soft);margin-bottom:16px;}
+  .section-title{font-family:'Fredoka One',cursive;font-size:1.4rem;margin-bottom:16px;color:var(--blue);}
+  .divider{height:1px;background:rgba(255,255,255,.07);margin:20px 0;}
+  .celebration{font-size:3rem;text-align:center;padding:10px;animation:bounce .5s infinite alternate;}
+  .winner-name{font-family:'Fredoka One',cursive;font-size:2rem;text-align:center;background:linear-gradient(135deg,var(--gold),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+  /* TOAST */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:12px 24px;font-weight:700;font-size:.95rem;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+  #toast.show{opacity:1;}
+
+  /* REJOIN MODAL */
+  #rejoin-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(380px,92vw);background:var(--card);border:2px solid rgba(78,203,113,.4);border-radius:22px;padding:28px 24px;z-index:2000;display:none;box-shadow:0 30px 80px rgba(0,0,0,.8);text-align:center;}
+  #rejoin-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1999;display:none;}
+  /* ROOMS */
+  .rooms-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+  .rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px;}
+  .room-card{background:var(--card);border-radius:18px;padding:20px;border:1.5px solid rgba(255,255,255,.08);cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;position:relative;}
+  .room-card:hover{transform:translateY(-4px);border-color:rgba(79,195,247,.4);box-shadow:0 12px 32px rgba(0,0,0,.4);}
+  .room-card.room-full{opacity:.5;cursor:not-allowed;}
+  .room-card.room-full:hover{transform:none;border-color:rgba(255,255,255,.08);}
+  .room-card.room-playing{border-color:rgba(245,166,35,.3);}
+  .room-name{font-family:'Fredoka One',cursive;font-size:1.15rem;margin-bottom:6px;}
+  .room-meta{font-size:.78rem;color:var(--soft);display:flex;gap:10px;flex-wrap:wrap;}
+  .room-badge{padding:3px 10px;border-radius:50px;font-size:.72rem;font-weight:700;}
+  .badge-playing{background:rgba(245,166,35,.15);color:var(--gold);border:1px solid rgba(245,166,35,.3);}
+  .badge-waiting{background:rgba(78,203,113,.12);color:var(--green);border:1px solid rgba(78,203,113,.25);}
+  .badge-lock{background:rgba(233,69,96,.12);color:var(--accent);border:1px solid rgba(233,69,96,.25);}
+  .room-count{position:absolute;top:14px;right:14px;font-family:'Fredoka One',cursive;font-size:.85rem;color:var(--soft);}
+  .empty-rooms{text-align:center;padding:48px 20px;color:var(--soft);}
+  .empty-rooms .er-icon{font-size:3rem;margin-bottom:12px;}
+
+  /* CREATE ROOM MODAL */
+  #create-room-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(440px,95vw);background:var(--card);border:1.5px solid rgba(79,195,247,.3);border-radius:24px;padding:28px;z-index:1000;display:none;box-shadow:0 30px 80px rgba(0,0,0,.7);}
+  #create-room-modal h2{font-family:'Fredoka One',cursive;color:var(--blue);margin-bottom:20px;}
+  #cr-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:none;}
+  .cr-input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.9rem;margin-bottom:12px;}
+  .cr-input:focus{outline:none;border-color:var(--blue);}
+  .cr-label{font-size:.78rem;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:block;}
+
+  /* JOIN PASSWORD MODAL */
+  #join-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(380px,95vw);background:var(--card);border:1.5px solid rgba(233,69,96,.3);border-radius:20px;padding:24px;z-index:1000;display:none;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+  #join-modal h3{font-family:'Fredoka One',cursive;color:var(--accent);margin-bottom:14px;}
+
+  /* PRESENCE BAR — during game */
+  #presence-bar{display:none;position:sticky;top:40px;z-index:100;background:rgba(15,52,96,.95);border-bottom:1px solid rgba(255,255,255,.08);padding:8px 16px;backdrop-filter:blur(8px);}
+  .presence-bar-inner{display:flex;gap:12px;flex-wrap:wrap;align-items:center;max-width:960px;margin:0 auto;}
+  .presence-player{display:flex;align-items:center;gap:5px;font-size:.78rem;font-weight:700;}
+  .presence-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;transition:background .4s;}
+  .presence-dot.active{background:#4ecb71;box-shadow:0 0 6px #4ecb71;}
+  .presence-dot.away{background:#e94560;box-shadow:0 0 6px #e94560;}
+  .presence-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--soft);margin-right:6px;}
+
+  /* SUPER ADMIN PANEL */
+  #sa-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(500px,95vw);background:var(--card);border:1.5px solid rgba(245,166,35,.4);border-radius:24px;padding:28px;z-index:1000;display:none;box-shadow:0 30px 80px rgba(0,0,0,.7);}
+  #sa-panel h2{font-family:'Fredoka One',cursive;color:var(--gold);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  #sa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:none;}
+  .sa-user-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07);}
+  .sa-user-row:last-child{border-bottom:none;}
+  .sa-uname{flex:1;font-weight:700;font-size:.9rem;}
+  .sa-pwd{color:var(--soft);font-size:.8rem;font-family:monospace;}
+  .sa-edit-btn{background:rgba(79,195,247,.15);border:1px solid rgba(79,195,247,.3);color:var(--blue);border-radius:8px;padding:4px 10px;font-size:.75rem;font-weight:700;cursor:pointer;}
+  .sa-del-btn{background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.3);color:var(--accent);border-radius:8px;padding:4px 10px;font-size:.75rem;font-weight:700;cursor:pointer;}
+  .sa-input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.9rem;margin-bottom:8px;}
+  .sa-input:focus{outline:none;border-color:var(--gold);}
+  .sa-error{background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.4);border-radius:8px;padding:8px 12px;color:#ff8fa3;font-size:.82rem;font-weight:700;margin-bottom:10px;display:none;}
+
+  /* ACTIVITY DOT */
+  .activity-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(0,0,0,.3);}
+  .dot-active{background:#4ecb71;}
+  .dot-away{background:#e94560;}
+
+  /* CHAT */
+  #chat-panel{position:fixed;bottom:20px;right:20px;width:300px;z-index:500;flex-direction:column;gap:0;display:none;}
+  #chat-body-inner{display:none;}
+  #chat-toggle{background:var(--card);border:1px solid rgba(255,255,255,.15);border-radius:50px;padding:10px 20px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;font-size:.9rem;color:var(--text);display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.4);align-self:flex-end;}
+  #chat-toggle .chat-badge{background:var(--accent);color:white;border-radius:50%;width:18px;height:18px;font-size:.7rem;display:none;align-items:center;justify-content:center;}
+  #chat-body{flex-direction:column;background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:16px 16px 0 0;overflow:hidden;box-shadow:0 -4px 30px rgba(0,0,0,.4);margin-bottom:0;display:none;}
+  #chat-messages{height:220px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;}
+  #chat-messages::-webkit-scrollbar{width:4px;}
+  #chat-messages::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px;}
+  .chat-msg{font-size:.82rem;line-height:1.4;}
+  .chat-msg .chat-who{font-weight:800;margin-right:4px;}
+  .chat-msg .chat-time{color:rgba(255,255,255,.3);font-size:.72rem;margin-left:4px;}
+  .chat-msg.chat-me .chat-who{color:var(--blue);}
+  .chat-msg.chat-other .chat-who{color:var(--gold);}
+  .chat-msg.chat-system{color:var(--soft);font-style:italic;font-size:.78rem;}
+  #chat-input-row{display:flex;border-top:1px solid rgba(255,255,255,.08);padding:8px;}
+  #chat-input{flex:1;background:transparent;border:none;color:var(--text);font-family:'Nunito',sans-serif;font-size:.88rem;padding:4px 8px;}
+  #chat-input:focus{outline:none;}
+  #chat-send{background:var(--accent);border:none;border-radius:8px;color:white;padding:6px 12px;cursor:pointer;font-weight:800;font-size:.82rem;}
+
+  /* ═══ MOBILE RESPONSIVE ═══ */
+  @media(max-width:640px){
+    body{padding-top:40px;}
+    .container{padding:12px;}
+
+    /* Header */
+    .header{flex-wrap:wrap;gap:8px;padding:10px 0;}
+    .logo{font-size:1.4rem;}
+    .user-chip{padding:5px 12px;font-size:.82rem;}
+    .logout-btn{padding:5px 10px;font-size:.78rem;}
+    #sa-header-btn{padding:5px 10px;font-size:.78rem;}
+
+    /* Login */
+    .login-wrap{padding:24px 16px;margin:16px auto;border-radius:18px;}
+    .login-title{font-size:1.5rem;}
+
+    /* Home */
+    .home-welcome h2{font-size:1.3rem;}
+    .games-grid{grid-template-columns:1fr 1fr;gap:10px;}
+    .game-card{padding:18px 10px;}
+    .game-icon{font-size:2.5rem;}
+
+    /* Lobby */
+    .card{padding:16px 14px;border-radius:16px;}
+    .card h2{font-size:1.1rem;}
+    .player-row{flex-wrap:wrap;gap:6px;padding:8px 0;}
+    .player-row-name{font-size:.85rem;}
+    .kick-btn,.makeadmin-btn{padding:3px 8px;font-size:.7rem;}
+    .status-chip{font-size:.7rem;padding:3px 8px;}
+    .btn{font-size:.88rem;padding:10px 20px;}
+    .btn-sm{padding:6px 12px;font-size:.78rem;}
+    .flex-row{gap:6px;}
+    .time-btn{padding:6px 10px;font-size:.78rem;}
+
+    /* Letter screen */
+    .letter-circle{width:120px;height:120px;}
+    .letter-circle span{font-size:4.5rem;}
+    .letter-display{margin:16px 0;}
+
+    /* Writing */
+    .categories-grid{grid-template-columns:1fr 1fr;gap:8px;}
+    .category-item{padding:10px 12px;border-radius:10px;}
+    .category-item input{font-size:.9rem;}
+    #admin-change-letter{margin-top:8px;}
+
+    /* Scoring */
+    .answers-review{padding:12px;border-radius:12px;}
+
+    /* Leaderboard */
+    .leaderboard-item{padding:12px 14px;gap:10px;}
+    .lb-name{font-size:.95rem;}
+    .lb-score{font-size:1.5rem;}
+    .rank-badge{font-size:1.3rem;width:32px;}
+    .section-title{font-size:1.2rem;}
+
+    /* Chat */
+    #chat-panel{width:calc(100vw - 24px);right:12px;bottom:12px;}
+    #chat-messages{height:180px;}
+    #chat-toggle{padding:8px 16px;font-size:.85rem;}
+
+    /* Toast */
+    #toast{width:90%;font-size:.85rem;padding:10px 16px;bottom:80px;}
+
+    /* SA panel */
+    #sa-panel{padding:20px 16px;border-radius:18px;}
+    .sa-user-row{flex-wrap:wrap;gap:6px;}
+    .sa-pwd{width:100%;}
+
+    /* WS bar */
+    #wsBar{font-size:11px;padding:5px;}
+  }
+
+  @media(max-width:380px){
+    .games-grid{grid-template-columns:1fr;}
+    .categories-grid{grid-template-columns:1fr;}
+    .letter-circle{width:100px;height:100px;}
+    .letter-circle span{font-size:3.8rem;}
+  }
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div id="wsBar" class="disconnected">⚫ Nije povezano na server</div>
+<div id="presence-bar"><div class="presence-bar-inner"><span class="presence-label">👥 Igrači:</span><span id="presence-players"></span></div></div>
+<div id="toast"></div>
+
+<div class="container">
+  <!-- HEADER -->
+  <div class="header" id="main-header">
+    <div class="logo">🌍 GeoIgre</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="user-chip"><div class="dot"></div><span id="header-uname">-</span></div>
+      <button id="sa-header-btn" onclick="openSAPanel()" style="display:none;background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.4);color:var(--gold);border-radius:50px;padding:6px 14px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;">⚙️ Korisnici</button>
+      <button class="logout-btn" onclick="doLogout()">Odjavi se</button>
+    </div>
+  </div>
+
+  <!-- ══ LOGIN ══ -->
+  <div class="screen active" id="screen-login">
+    <div style="text-align:center;padding:28px 0 0"><div style="font-size:3rem">🌍</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:2.2rem;background:linear-gradient(135deg,var(--gold),var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">GeoIgre</div>
+    </div>
+    <div class="login-wrap">
+      <div class="login-title">🔐 Prijava</div>
+      <p class="login-sub">Uloguj se i igraj sa prijateljima!</p>
+      <div class="field"><label>Korisničko ime</label>
+        <input type="text" id="login-username" placeholder="Tvoje ime..." autocomplete="off"></div>
+      <div class="field"><label>Lozinka</label>
+        <input type="password" id="login-password" placeholder="••••••"></div>
+      <div class="error-box" id="login-error">Greška!</div>
+      <button class="btn btn-primary" style="width:100%;font-size:1.05rem;padding:14px" onclick="doLogin()">Prijavi se →</button>
+    </div>
+  </div>
+
+  <!-- ══ HOME — izbor igre ══ -->
+  <div class="screen" id="screen-home">
+    <div class="home-welcome">
+      <h2>Dobrodošao, <span id="home-uname" style="color:var(--blue)">-</span>! 👋</h2>
+      <p>Izaberi igru i zabavi se sa prijateljima</p>
+    </div>
+    <!-- Kartice igara se dodaju automatski iz registerGame() -->
+    <div class="games-grid" id="games-grid"></div>
+  </div>
+  <!-- Ekrani igara se ubacuju ovde -->
+  <div id="game-screens"></div>
+
+  <!-- ══ ROOMS — sobe za Zanimljivu Geografiju ══ -->
+  <div class="screen" id="screen-rooms">
+    <div class="rooms-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-outline btn-sm" onclick="showScreen('home')">← Nazad</button>
+        <div>
+          <h2 style="font-family:'Fredoka One',cursive;font-size:1.4rem;">🗺️ Zanimljiva Geografija</h2>
+          <p style="color:var(--soft);font-size:.82rem;margin-top:2px">Uđi u sobu ili napravi svoju</p>
+        </div>
+      </div>
+      <button class="btn btn-green" onclick="openCreateRoom()" style="white-space:nowrap">➕ Nova soba</button>
+    </div>
+    <div id="rooms-grid" class="rooms-grid">
+      <div class="empty-rooms"><div class="er-icon">🏠</div><p>Nema aktivnih soba.<br>Budi prvi — napravi sobu!</p></div>
+    </div>
+  </div>
+
+  <!-- ══ LOBBY ══ -->
+  <div class="screen" id="screen-lobby">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="leaveRoom()">← Izađi</button>
+      <div style="flex:1">
+        <div style="font-family:'Fredoka One',cursive;font-size:1.4rem">🗺️ <span id="lobby-room-name">Soba</span></div>
+        <div style="color:var(--soft);font-size:.82rem" id="lobby-subtitle">Čekaonica</div>
+      </div>
+    </div>
+    <div class="card"><h2>👥 Igrači u sobi</h2><div id="lobby-list"></div></div>
+    <div style="text-align:center;margin-bottom:16px">
+      <button class="btn btn-blue" id="btn-lock" onclick="sendToggleLock()" style="font-size:1.05rem;padding:14px 36px">🔓 Zaključaj se!</button>
+      <p style="color:var(--soft);font-size:.82rem;margin-top:8px">Svi moraju da se zaključaju pre početka</p>
+    </div>
+    <div id="admin-panel" style="display:none">
+      <div class="card">
+        <h2>⚙️ Podešavanja <span class="admin-badge">👑 Samo za tebe</span></h2>
+        <div style="background:var(--deep);border-radius:14px;padding:16px;margin-bottom:16px">
+          <div style="font-size:.8rem;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">⏱️ Vreme po rundi</div>
+          <div class="flex-row">
+            <button class="btn btn-sm time-btn" data-sec="60">1 min</button>
+            <button class="btn btn-sm time-btn active-time" data-sec="120">2 min</button>
+            <button class="btn btn-sm time-btn" data-sec="180">3 min</button>
+            <button class="btn btn-sm time-btn" data-sec="0">Bez tajmera</button>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <button class="btn btn-primary" id="btn-start" disabled onclick="adminStartGame()" style="font-size:1.05rem;padding:14px 40px">🎲 Pokreni igru!</button>
+          <p style="color:var(--soft);font-size:.82rem;margin-top:8px" id="start-hint">Čekaj da se svi zaključaju...</p>
+        </div>
+      </div>
+    </div>
+    <div id="non-admin-wait" style="display:none">
+      <div class="waiting-notice">⏳ Čekaj admina (<span id="admin-name-lbl">-</span>) da pokrene igru...</div>
+    </div>
+  </div>
+
+  <!-- ══ LETTER ══ -->
+  <div class="screen" id="screen-letter">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <button class="btn btn-outline btn-sm" onclick="confirmLeaveGame()">← Izađi</button>
+      <div class="round-badge" id="round-lbl" style="margin-bottom:0">🎯 Runda 1</div>
+    </div>
+    <div class="letter-display">
+      <div class="letter-circle"><span id="drawn-letter" class="rolling-letter">?</span></div>
+      <p style="color:var(--soft);font-size:1.1rem">Izvučeno slovo je:</p>
+    </div>
+    <div style="text-align:center">
+      <button class="btn btn-green" onclick="goToWriting()" style="font-size:1.1rem;padding:14px 40px">✏️ Kreni sa pisanjem!</button>
+    </div>
+  </div>
+
+  <!-- ══ WRITING ══ -->
+  <div class="screen" id="screen-writing">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <button class="btn btn-outline btn-sm" onclick="confirmLeaveGame()">← Izađi</button>
+      <div class="round-badge" id="writing-round-lbl" style="margin-bottom:0">🎯 Runda 1</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div><span style="font-size:1.1rem;color:var(--soft)">Slovo: </span>
+        <span id="writing-letter" style="font-family:'Fredoka One',cursive;font-size:2rem;color:var(--gold)">A</span></div>
+      <div class="timer-text" id="timer-text">2:00</div>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+    <div id="writing-categories" class="categories-grid"></div>
+    <div style="text-align:center;margin-top:20px">
+      <button class="btn btn-gold" onclick="submitAnswers()" id="btn-submit" style="font-size:1.1rem;padding:14px 40px">✅ Predaj odgovore</button>
+    </div>
+    <div id="admin-change-letter" style="display:none;text-align:center;margin-top:12px">
+      <div style="color:var(--soft);font-size:.8rem;margin-bottom:8px;font-weight:700">👑 Admin — promeni slovo:</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:500px;margin:0 auto" id="letter-btns"></div>
+    </div>
+    <div class="submitted-chips" id="submitted-chips"></div>
+  </div>
+
+  <!-- ══ SCORING ══ -->
+  <div class="screen" id="screen-scoring">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <button class="btn btn-outline btn-sm" onclick="confirmLeaveGame()">← Izađi</button>
+      <div class="round-badge" id="scoring-round-lbl" style="margin-bottom:0">🎯 Runda 1</div>
+    </div>
+    <div class="section-title">📋 Pregled odgovora</div>
+    <p style="color:var(--soft);margin-bottom:16px;font-size:.9rem" id="scoring-sub"></p>
+    <div id="scoring-content"></div>
+    <div style="text-align:center;margin-top:24px" id="scoring-btns"></div>
+  </div>
+
+  <!-- ══ RESULTS ══ -->
+  <div class="screen" id="screen-results">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <button class="btn btn-outline btn-sm" onclick="confirmLeaveGame()">← Izađi</button>
+      <div class="round-badge" id="results-round-lbl" style="margin-bottom:0">📊 Nakon runde 1</div>
+    </div>
+    <div class="section-title">🏆 Trenutni plasman</div>
+    <div id="leaderboard"></div>
+    <div class="divider"></div>
+    <div style="text-align:center;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px" id="results-btns"></div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- REJOIN OVERLAY -->
+<div id="rejoin-overlay"></div>
+<!-- REJOIN MODAL -->
+<div id="rejoin-modal">
+  <div style="font-size:2.5rem;margin-bottom:10px">🔄</div>
+  <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--green);margin-bottom:8px">Vrati se u igru!</div>
+  <p style="color:var(--soft);font-size:.9rem;margin-bottom:20px">Bio si u sobi <strong id="rejoin-room-name" style="color:var(--text)">-</strong>.<br>Igra je još uvek aktivna.</p>
+  <div style="display:flex;gap:10px;justify-content:center">
+    <button class="btn btn-green" onclick="doRejoin()" style="flex:1;font-size:1rem">✅ Vrati se</button>
+    <button class="btn btn-outline" onclick="dismissRejoin()" style="flex:1;font-size:1rem">✕ Ostani ovde</button>
+  </div>
+</div>
+
+<!-- CREATE ROOM OVERLAY -->
+<div id="cr-overlay" onclick="closeCreateRoom();closeJoinModal()"></div>
+<!-- CREATE ROOM MODAL -->
+<div id="create-room-modal">
+  <h2>🏠 Nova soba</h2>
+  <label class="cr-label">Naziv sobe</label>
+  <input class="cr-input" id="cr-name" placeholder="npr. Ekipa iz škole..." autocomplete="off" maxlength="30" onkeydown="if(event.key==='Enter')submitCreateRoom()">
+  <label class="cr-label">Lozinka sobe <span style="color:var(--soft);font-weight:400">(opciono)</span></label>
+  <input class="cr-input" id="cr-password" placeholder="Ostavi prazno za javnu sobu..." autocomplete="off" onkeydown="if(event.key==='Enter')submitCreateRoom()">
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button class="btn btn-blue" style="flex:1" onclick="submitCreateRoom()">🏠 Napravi sobu</button>
+    <button class="btn btn-outline" onclick="closeCreateRoom()">Otkaži</button>
+  </div>
+</div>
+
+<!-- JOIN PASSWORD MODAL -->
+<div id="join-modal">
+  <h3>🔒 Lozinka sobe</h3>
+  <p style="color:var(--soft);font-size:.85rem;margin-bottom:12px">Ova soba je zaštićena lozinkom.</p>
+  <input class="cr-input" id="join-password" placeholder="Upiši lozinku..." autocomplete="off" onkeydown="if(event.key==='Enter')submitJoinPassword()">
+  <div style="display:flex;gap:8px;margin-top:4px">
+    <button class="btn btn-primary" style="flex:1" onclick="submitJoinPassword()">Uđi →</button>
+    <button class="btn btn-outline" onclick="closeJoinModal()">Otkaži</button>
+  </div>
+  <div id="join-error" style="color:var(--accent);font-size:.82rem;font-weight:700;margin-top:8px;display:none"></div>
+</div>
+
+<!-- SUPER ADMIN OVERLAY -->
+<div id="sa-overlay" onclick="closeSAPanel()"></div>
+
+<!-- SUPER ADMIN PANEL -->
+<div id="sa-panel">
+  <h2>⚙️ Upravljanje korisnicima</h2>
+  <div class="sa-error" id="sa-error"></div>
+
+  <div id="sa-users-list"></div>
+
+  <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.1)">
+    <div style="font-weight:800;font-size:.85rem;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px" id="sa-form-title">➕ Dodaj korisnika</div>
+    <input class="sa-input" id="sa-old-username" type="hidden">
+    <input class="sa-input" id="sa-new-username" placeholder="Korisničko ime" autocomplete="off">
+    <input class="sa-input" id="sa-new-password" placeholder="Lozinka" autocomplete="off">
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-gold btn-sm" onclick="saSubmitForm()" id="sa-submit-btn">➕ Dodaj</button>
+      <button class="btn btn-outline btn-sm" onclick="saResetForm()" id="sa-cancel-btn" style="display:none">✕ Otkaži</button>
+      <button class="btn btn-outline btn-sm" onclick="closeSAPanel()" style="margin-left:auto">Zatvori</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT PANEL -->
+<div id="chat-panel">
+  <div id="chat-body">
+    <div id="chat-messages"></div>
+    <div id="chat-input-row">
+      <input id="chat-input" placeholder="Poruka..." maxlength="200" autocomplete="off" onkeydown="if(event.key==='Enter')sendChat()">
+      <button id="chat-send" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+  <button id="chat-toggle" onclick="toggleChat()">
+    💬 Chat <span class="chat-badge" id="chat-badge">0</span>
+  </button>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// GAME REGISTRY
+// ════════════════════════════════════════════════════════
+const _games = {};
+const _gameQueue = [];
+let _domReady = false;
+function registerGame(config) {
+  if(!_domReady){ _gameQueue.push(config); return; }
+  _doRegisterGame(config);
+}
+function _doRegisterGame(config) {
+  _games[config.id] = config;
+  if(config.css){ const s=document.createElement('style'); s.textContent=config.css; document.head.appendChild(s); }
+  if(config.screens){ const d=document.createElement('div'); d.innerHTML=config.screens; const gs=document.getElementById('game-screens'); if(gs) gs.appendChild(d); }
+  const grid=document.getElementById('games-grid');
+  if(grid){ const card=document.createElement('div'); card.className='game-card'; card.onclick=()=>showScreen(config.id+'-rooms'); card.innerHTML='<span class="game-icon">'+config.icon+'</span><div class="game-title">'+config.name+'</div><div class="game-desc">'+config.desc+'</div>'; grid.appendChild(card); }
+  if(config.init) setTimeout(()=>config.init(),50);
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  _domReady=true;
+  _gameQueue.forEach(c=>_doRegisterGame(c));
+  _gameQueue.length=0;
+});
+function dispatchToGames(data){ Object.values(_games).forEach(g=>{ if(g.handleMessage) try{g.handleMessage(data);}catch(e){console.error(e);} }); }
+// ════════════════════════════════════════════════════════
+
+// ── LOGIN ──
+document.getElementById('login-password').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('login-username').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('login-password').focus(); });
+
+function doLogin(){
+  const username=document.getElementById('login-username').value.trim();
+  const password=document.getElementById('login-password').value;
+  if(!username||!password){ showErr('Popuni sva polja!'); return; }
+  document.getElementById('login-error').style.display='none';
+  me.username=username; me._pwd=password;
+  connectWS();
+}
+function showErr(msg){ const e=document.getElementById('login-error'); e.textContent=msg; e.style.display='block'; }
+
+function doLogout(){
+  stopActivityTracking();
+  send({type:'logout',username:me.username});
+  if(ws) ws.close();
+  me={username:null,isAdmin:false,isSuperAdmin:false}; myLocked=false; myRoomId=null;
+  document.getElementById('main-header').classList.remove('show');
+  document.getElementById('chat-panel').style.display='none';
+  document.getElementById('login-username').value='';
+  document.getElementById('login-password').value='';
+  document.getElementById('login-error').style.display='none';
+  showScreen('login');
+}
+
+// ── LOBBY ──
+// Time buttons
+document.querySelectorAll('.time-btn').forEach(btn=>{
+  btn.onclick=()=>{ document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active-time')); btn.classList.add('active-time'); roundTime=parseInt(btn.dataset.sec); };
+});
+
+// ── GAME ──
+
+// ── SCORING ──
+// Kategorije koje imaju listu (ostale = slobodan odgovor)
+const CATS_WITH_LIST = new Set(['drzava','grad','selo','reka','planina','zivotinja','biljka','predmet','ime']);
+
+// Status odgovora: 'tacno' | 'netacno' | 'nepoznato' | 'prazno'
+function answerStatus(catKey, val, letter){
+  if(!val || !val.trim()) return 'prazno';
+  const firstChar = normalizuj(val.trim()[0]).toUpperCase();
+  const normLetter = normalizuj(letter).toUpperCase();
+  if(firstChar !== normLetter) return 'netacno'; // ne pocinje ispravnim slovom
+  if(!CATS_WITH_LIST.has(catKey)) return 'nepoznato'; // kategorija bez liste
+  return isValidAnswer(catKey, val, letter) ? 'tacno' : 'nepoznato';
+}
+// ── RESULTS ──
+
+// ── CHAT ──
+function toggleChat(){
+  chatOpen=!chatOpen;
+  const body=document.getElementById('chat-body');
+  body.style.display=chatOpen?'flex':'none';
+  if(chatOpen){ chatUnread=0; updateChatBadge(); const msgs=document.getElementById('chat-messages'); msgs.scrollTop=msgs.scrollHeight; }
+}
+
+function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const msg=inp.value.trim();
+  if(!msg) return;
+  // Show locally immediately, skip server echo
+  const now=new Date().toLocaleTimeString('sr',{hour:'2-digit',minute:'2-digit'});
+  addChatMsg(me.username, msg, now, true);
+  send({type:'chat_msg',username:me.username,msg});
+  inp.value='';
+}
+
+// Enter key for chat - set once via onkeydown attribute in HTML
+
+let _lastSentMsg = null;
+function addChatMsg(username, msg, time, localSend){
+  // If this is an echo of our own locally-sent message, skip it
+  if(!localSend && username===me.username && _lastSentMsg===msg){
+    _lastSentMsg=null; return;
+  }
+  if(localSend) _lastSentMsg=msg;
+  const msgs=document.getElementById('chat-messages');
+  const isMe=username===me.username;
+  const isSystem=!username;
+  const div=document.createElement('div');
+  div.className='chat-msg '+(isSystem?'chat-system':isMe?'chat-me':'chat-other');
+  if(isSystem){ div.textContent=msg; }
+  else { div.innerHTML=`<span class="chat-who">${username}:</span>${msg}<span class="chat-time">${time||''}</span>`; }
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  if(!chatOpen && !isMe){ chatUnread++; updateChatBadge(); }
+}
+
+function updateChatBadge(){
+  const b=document.getElementById('chat-badge');
+  b.style.display=chatUnread>0?'flex':'none';
+  b.textContent=chatUnread;
+}
+
+
+
+// ── REJOIN ──
+let _pendingRejoin = null;
+
+function doRejoin(){
+  if(!_pendingRejoin) return;
+  dismissRejoin();
+  const r = _pendingRejoin;
+  _pendingRejoin = null;
+  // Simuliraj joined_room sa podacima od servera
+  myRoomId = r.roomId;
+  myRoomName = r.roomName;
+  me.isAdmin = r.isAdmin;
+  currentAdminUser = r.adminUser;
+  roundTime = r.roundTime || 120;
+  document.getElementById('header-uname').textContent = me.username + (me.isAdmin?' 👑':'');
+  document.getElementById('lobby-room-name').textContent = r.roomName;
+  document.getElementById('chat-panel').style.display='flex';
+  showScreen('lobby');
+  if(me.isAdmin) toast('👑 Ti si admin ove sobe!','var(--gold)');
+  toast('🔄 Uspešno vraćen u sobu!','var(--green)');
+}
+
+function dismissRejoin(){
+  _pendingRejoin = null;
+  document.getElementById('rejoin-modal').style.display='none';
+  document.getElementById('rejoin-overlay').style.display='none';
+}
+
+// ── ROOMS ──
+function renderRoomList(){
+  const grid = document.getElementById('rooms-grid');
+  if(!grid) return;
+  if(!roomList || roomList.length===0){
+    grid.innerHTML='<div class="empty-rooms"><div class="er-icon">🏠</div><p>Nema aktivnih soba.<br>Budi prvi — napravi sobu!</p></div>';
+    return;
+  }
+  grid.innerHTML='';
+  roomList.forEach(r=>{
+    const isFull = r.playerCount >= r.maxPlayers;
+    const card = document.createElement('div');
+    card.className='room-card'+(isFull?' room-full':'')+(r.gameActive?' room-playing':'');
+    card.onclick = isFull ? null : ()=>tryJoinRoom(r.id, r.hasPassword);
+    card.innerHTML=`
+      <div class="room-count">${r.playerCount}/${r.maxPlayers} 👤</div>
+      <div class="room-name">🏠 ${r.name}</div>
+      <div class="room-meta">
+        <span>👤 ${r.owner}</span>
+        <span>⏱️ ${r.roundTime>0?Math.floor(r.roundTime/60)+'min':'∞'}</span>
+        ${r.hasPassword?'<span class="room-badge badge-lock">🔒 Lozinka</span>':''}
+        <span class="room-badge ${r.gameActive?'badge-playing':'badge-waiting'}">${r.gameActive?'🎮 U igri':'✅ Čeka'}</span>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function tryJoinRoom(roomId, hasPassword){
+  if(hasPassword){
+    pendingJoinRoomId = roomId;
+    document.getElementById('join-password').value='';
+    document.getElementById('join-error').style.display='none';
+    document.getElementById('join-modal').style.display='block';
+    document.getElementById('cr-overlay').style.display='block';
+    setTimeout(()=>document.getElementById('join-password').focus(),100);
+  } else {
+    send({type:'join_room', roomId, password:''});
+  }
+}
+
+function submitJoinPassword(){
+  const pw = document.getElementById('join-password').value;
+  if(window._joiningImposterRoom){
+    send({type:'imposter_join_room', roomId:pendingJoinRoomId, password:pw});
+    window._joiningImposterRoom=false;
+  } else {
+    send({type:'join_room', roomId:pendingJoinRoomId, password:pw});
+  }
+  closeJoinModal();
+}
+
+function closeJoinModal(){
+  document.getElementById('join-modal').style.display='none';
+  document.getElementById('cr-overlay').style.display='none';
+}
+
+function openCreateRoom(){
+  document.getElementById('cr-name').value='';
+  document.getElementById('cr-password').value='';
+  document.getElementById('create-room-modal').style.display='block';
+  document.getElementById('cr-overlay').style.display='block';
+  setTimeout(()=>document.getElementById('cr-name').focus(),100);
+}
+
+function closeCreateRoom(){
+  document.getElementById('create-room-modal').style.display='none';
+  document.getElementById('join-modal').style.display='none';
+  document.getElementById('cr-overlay').style.display='none';
+}
+
+function submitCreateRoom(){
+  const name = document.getElementById('cr-name').value.trim() || (me.username + "'s soba");
+  const password = document.getElementById('cr-password').value.trim();
+  const gameType = window._creatingGameType || 'geo';
+  send({type:'create_room', name, password, maxPlayers:8, roundTime:120, gameType});
+  closeCreateRoom();
+}
+
+// ── SUPER ADMIN PANEL ──
+function openSAPanel(){
+  renderSAUsers();
+  document.getElementById('sa-panel').style.display='block';
+  document.getElementById('sa-overlay').style.display='block';
+}
+function closeSAPanel(){
+  document.getElementById('sa-panel').style.display='none';
+  document.getElementById('sa-overlay').style.display='none';
+  saResetForm();
+}
+
+function renderSAUsers(){
+  const list=document.getElementById('sa-users-list');
+  list.innerHTML='<div style="font-weight:800;font-size:.85rem;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">👥 Trenutni korisnici</div>';
+  saKorisnici.forEach(k=>{
+    const isSelf=k.username==='Dalibor';
+    const row=document.createElement('div'); row.className='sa-user-row';
+    row.innerHTML=`
+      <span class="sa-uname">${k.username}${isSelf?' 👑':''}</span>
+      <span class="sa-pwd">🔑 ${k.password}</span>
+      ${!isSelf?`<button class="sa-edit-btn" onclick="saStartEdit('${k.username}','${k.password}')">✏️ Izmeni</button>
+      <button class="sa-del-btn" onclick="saDeleteUser('${k.username}')">🗑️</button>`:''}
+    `;
+    list.appendChild(row);
+  });
+}
+
+function saStartEdit(username, password){
+  document.getElementById('sa-form-title').textContent='✏️ Izmeni korisnika: '+username;
+  document.getElementById('sa-old-username').value=username;
+  document.getElementById('sa-new-username').value=username;
+  document.getElementById('sa-new-password').value=password;
+  document.getElementById('sa-submit-btn').textContent='💾 Sačuvaj';
+  document.getElementById('sa-cancel-btn').style.display='inline-flex';
+}
+
+function saResetForm(){
+  document.getElementById('sa-form-title').textContent='➕ Dodaj korisnika';
+  document.getElementById('sa-old-username').value='';
+  document.getElementById('sa-new-username').value='';
+  document.getElementById('sa-new-password').value='';
+  document.getElementById('sa-submit-btn').textContent='➕ Dodaj';
+  document.getElementById('sa-cancel-btn').style.display='none';
+  document.getElementById('sa-error').style.display='none';
+}
+
+function saSubmitForm(){
+  const oldUsername=document.getElementById('sa-old-username').value;
+  const newUsername=document.getElementById('sa-new-username').value.trim();
+  const newPassword=document.getElementById('sa-new-password').value.trim();
+  if(!newUsername||!newPassword){ const e=document.getElementById('sa-error'); e.textContent='Popuni sva polja!'; e.style.display='block'; return; }
+  if(oldUsername){
+    send({type:'sa_edit_user',oldUsername,newUsername,newPassword});
+  } else {
+    send({type:'sa_add_user',username:newUsername,password:newPassword});
+  }
+  saResetForm();
+}
+
+function saDeleteUser(username){
+  if(!confirm(`Obriši korisnika "${username}"? Ovo se ne može poništiti!`)) return;
+  send({type:'sa_delete_user',username});
+}
+
+
+
+// ── LEAVE GAME ──
+function confirmLeaveGame(){
+  if(!confirm('Napusti igru i vrati se na izbor igara?')) return;
+  clearInterval(timerInterval);
+  send({type:'leave_room'});
+}
+
+// ── PRESENCE BAR ──
+function updatePresenceBar(players){
+  const container = document.getElementById('presence-players');
+  if(!container) return;
+  // Use gamePlayers order if available, else lobbyPlayers
+  const order = gamePlayers.length ? gamePlayers : (players||[]).map(p=>p.username);
+  const playerMap = {};
+  (players||[]).forEach(p=>{ playerMap[p.username]=p; });
+
+  container.innerHTML = order.map(username=>{
+    const p = playerMap[username];
+    const active = p ? p.active !== false : true;
+    const color = active ? 'active' : 'away';
+    const title = active ? 'U igri' : 'Van taba';
+    return `<span class="presence-player">
+      <span class="presence-dot ${color}" title="${title}"></span>
+      <span style="color:${username===me.username?'var(--blue)':'var(--text)'}">${username}${username===currentAdminUser?' 👑':''}</span>
+    </span>`;
+  }).join('');
+}
+
+// ── ACTIVITY TRACKING + HEARTBEAT ──
+let _heartbeatInterval = null;
+
+function startActivityTracking(){
+  function sendActivity(active){ send({type:'activity',username:me.username,active}); }
+
+  // Visibility API — radi na svim browswerima
+  document.addEventListener('visibilitychange',()=>{
+    sendActivity(!document.hidden);
+  });
+  // Fokus/blur kao backup
+  window.addEventListener('focus',()=>sendActivity(true));
+  window.addEventListener('blur',()=>sendActivity(false));
+
+  // Heartbeat — šalje ping svake 5 sekundi
+  // Ovo osigurava da server zna da si online čak i na mobitelu
+  if(_heartbeatInterval) clearInterval(_heartbeatInterval);
+  _heartbeatInterval = setInterval(()=>{
+    if(ws && ws.readyState === WebSocket.OPEN){
+      send({type:'ping'});
+    }
+  }, 2000);
+
+  // Inicijalni ping
+  sendActivity(true);
+  send({type:'ping'});
+}
+
+function stopActivityTracking(){
+  if(_heartbeatInterval){ clearInterval(_heartbeatInterval); _heartbeatInterval=null; }
+}
+
+window.addEventListener('beforeunload',()=>{ send({type:'logout',username:me.username}); });
+</script>
+
+<!-- ════ IGRE ════ -->
+<script>
+// geo.js
+// ╔══════════════════════════════════════════════════════╗
+// ║  IGRA: Zanimljiva Geografija                         ║
+// ║  Registracija: automatska pri učitavanju             ║
+// ╚══════════════════════════════════════════════════════╝
+
+registerGame({
+  id: 'geo',
+  name: 'Zanimljiva Geografija',
+  icon: '🗺️',
+  desc: 'Država, grad, reka, planina i još mnogo toga!',
+
+  // ── HTML ekrani ──────────────────────────────────────
+  screens: `
+  <!-- ══ GEO ROOMS ══ -->
+  <div class="screen" id="screen-geo-rooms">
+    <div class="rooms-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-outline btn-sm" onclick="showScreen('home')">← Nazad</button>
+        <div>
+          <h2 style="font-family:'Fredoka One',cursive;font-size:1.4rem;">🗺️ Zanimljiva Geografija</h2>
+          <p style="color:var(--soft);font-size:.82rem;margin-top:2px">Uđi u sobu ili napravi svoju</p>
+        </div>
+      </div>
+      <button class="btn btn-green" onclick="geoOpenCreateRoom()" style="white-space:nowrap">➕ Nova soba</button>
+    </div>
+    <div id="geo-rooms-grid" class="rooms-grid">
+      <div class="empty-rooms"><div class="er-icon">🏠</div><p>Nema aktivnih soba.<br>Budi prvi — napravi sobu!</p></div>
+    </div>
+  </div>
+
+  <!-- ══ GEO LOBBY ══ -->
+  <div class="screen" id="screen-lobby">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="leaveRoom()">← Izađi</button>
+      <div style="flex:1">
+        <div style="font-family:'Fredoka One',cursive;font-size:1.4rem">🗺️ <span id="lobby-room-name">Soba</span></div>
+        <div style="color:var(--soft);font-size:.82rem" id="lobby-subtitle">Čekaonica</div>
+      </div>
+    </div>
+    <div class="card"><h2>👥 Igrači u sobi</h2><div id="lobby-list"></div></div>
+    <div style="text-align:center;margin-bottom:16px">
+      <button class="btn btn-blue" id="btn-lock" onclick="sendToggleLock()" style="font-size:1.05rem;padding:14px 36px">🔓 Zaključaj se!</button>
+      <p style="color:var(--soft);font-size:.82rem;margin-top:8px">Svi moraju da se zaključaju pre početka</p>
+    </div>
+    <div id="admin-panel" style="display:none">
+      <div class="card">
+        <h2>⚙️ Podešavanja <span class="admin-badge">👑 Samo za tebe</span></h2>
+        <div style="background:var(--deep);border-radius:14px;padding:16px;margin-bottom:16px">
+          <div style="font-size:.8rem;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">⏱️ Vreme po rundi</div>
+          <div class="flex-row">
+            <button class="btn btn-sm time-btn" data-sec="60">1 min</button>
+            <button class="btn btn-sm time-btn active-time" data-sec="120">2 min</button>
+            <button class="btn btn-sm time-btn" data-sec="180">3 min</button>
+            <button class="btn btn-sm time-btn" data-sec="0">Bez tajmera</button>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <button class="btn btn-primary" id="btn-start" disabled onclick="adminStartGame()" style="font-size:1.05rem;padding:14px 40px">🎲 Pokreni igru!</button>
+          <p style="color:var(--soft);font-size:.82rem;margin-top:8px" id="start-hint">Čekaj da se svi zaključaju...</p>
+        </div>
+      </div>
+    </div>
+    <div id="non-admin-wait" style="display:none">
+      <div class="waiting-notice">⏳ Čekaj admina (<span id="admin-name-lbl">-</span>) da pokrene igru...</div>
+    </div>
+  </div>
+
+  <!-- ══ LETTER ══ -->
+  <div class="screen" id="screen-letter">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <button class="btn btn-outline btn-sm" onclick="confirmLeaveGame()">← Izađi</button>
+      <div class="round-badge" id="round-lbl" style="margin-bottom:0">🎯 Runda 1</div>
+    </div>
+    <div class="letter-display">
+      <div class="letter-circle"><span id="drawn-letter" class="rolling-letter">?</span></div>
+      <p style="color:var(--soft);font-size:1.1rem">Izvučeno slovo je:</p>
+    </div>
+    <div style="text-align:center">
+      <button class="btn btn-green" onclick="goToWriting()" style="font-size:1.1rem;padding:14px 40px">✏️ Kreni sa pisanjem!</button>
+    </div>
+  </div>
+
+  <!-- ══ WRITING ══ -->
+  <div class="screen" id="screen-writing">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <button class="btn btn-outline btn-sm" onclick="confirmLeaveGame()">← Izađi</button>
+      <div class="round-badge" id="writing-round-lbl" style="margin-bottom:0">🎯 Runda 1</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div><span style="font-size:1.1rem;color:var(--soft)">Slovo: </span>
+        <span id="writing-letter" style="font-family:'Fredoka One',cursive;font-size:2rem;color:var(--gold)">A</span></div>
+      <div class="timer-text" id="timer-text">2:00</div>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+    <div id="writing-categories" class="categories-grid"></div>
+    <div style="text-align:center;margin-top:20px">
+      <button class="btn btn-gold" onclick="submitAnswers()" id="btn-submit" style="font-size:1.1rem;padding:14px 40px">✅ Predaj odgovore</button>
+    </div>
+    <div id="admin-change-letter" style="display:none;text-align:center;margin-top:12px">
+      <div style="color:var(--soft);font-size:.8rem;margin-bottom:8px;font-weight:700">👑 Admin — promeni slovo:</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:500px;margin:0 auto" id="letter-btns"></div>
+    </div>
+    <div class="submitted-chips" id="submitted-chips"></div>
+  </div>
+
+  <!-- ══ SCORING ══ -->
+  <div class="screen" id="screen-scoring">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <button class="btn btn-outline btn-sm" onclick="confirmLeaveGame()">← Izađi</button>
+      <div class="round-badge" id="scoring-round-lbl" style="margin-bottom:0">🎯 Runda 1</div>
+    </div>
+    <div class="section-title">📋 Pregled odgovora</div>
+    <p style="color:var(--soft);margin-bottom:16px;font-size:.9rem" id="scoring-sub"></p>
+    <div id="scoring-content"></div>
+    <div style="text-align:center;margin-top:24px" id="scoring-btns"></div>
+  </div>
+
+  <!-- ══ RESULTS ══ -->
+  <div class="screen" id="screen-results">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <button class="btn btn-outline btn-sm" onclick="confirmLeaveGame()">← Izađi</button>
+      <div class="round-badge" id="results-round-lbl" style="margin-bottom:0">📊 Nakon runde 1</div>
+    </div>
+    <div class="section-title">🏆 Trenutni plasman</div>
+    <div id="leaderboard"></div>
+    <div class="divider"></div>
+    <div style="text-align:center;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px" id="results-btns"></div>
+  </div>
+  `,
+
+  // ── CSS ──────────────────────────────────────────────
+  css: `
+  .letter-display{text-align:center;margin:30px 0;}
+  .letter-circle{width:160px;height:160px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 0 60px rgba(233,69,96,.5);}
+  .letter-circle span{font-family:'Fredoka One',cursive;font-size:6rem;color:white;}
+  .rolling-letter{display:inline-block;animation:rollIn .8s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes rollIn{0%{transform:rotateY(90deg) scale(.5);opacity:0}100%{transform:rotateY(0) scale(1);opacity:1}}
+  .categories-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:20px 0;}
+  .category-item{background:var(--deep);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 16px;transition:border-color .2s;}
+  .category-item:focus-within{border-color:var(--blue);}
+  .category-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--soft);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .category-item input{width:100%;background:transparent;border:none;border-bottom:1.5px solid rgba(255,255,255,.15);border-radius:0;padding:4px 0;font-size:1rem;font-weight:700;color:white;}
+  .category-item input:focus{outline:none;border-bottom-color:var(--blue);}
+  .category-item input:disabled{opacity:.4;}
+  .timer-bar{background:rgba(255,255,255,.08);border-radius:50px;height:8px;margin:16px 0;overflow:hidden;}
+  .timer-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,var(--green),var(--gold),var(--accent));transition:width 1s linear;}
+  .timer-text{text-align:right;font-size:.85rem;color:var(--soft);margin-bottom:4px;font-weight:700;}
+  .submitted-chips{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+  .sub-chip{background:rgba(78,203,113,.15);border:1px solid rgba(78,203,113,.3);border-radius:50px;padding:4px 12px;font-size:.82rem;font-weight:700;color:var(--green);}
+  .answers-review{background:var(--deep);border-radius:16px;padding:20px;margin:16px 0;border:1px solid rgba(255,255,255,.07);}
+  .answers-review h3{font-size:1rem;color:var(--soft);margin-bottom:14px;font-weight:700;}
+  .leaderboard-item{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:14px;padding:16px 20px;margin-bottom:10px;border:1.5px solid rgba(255,255,255,.06);animation:slideIn .4s ease backwards;}
+  .leaderboard-item:nth-child(1){border-color:rgba(245,166,35,.4)}
+  .leaderboard-item:nth-child(2){border-color:rgba(192,192,192,.3)}
+  .leaderboard-item:nth-child(3){border-color:rgba(205,127,50,.3)}
+  .rank-badge{font-family:'Fredoka One',cursive;font-size:1.6rem;width:40px;text-align:center;}
+  .lb-name{flex:1;font-weight:800;font-size:1.1rem;}
+  .lb-score{font-family:'Fredoka One',cursive;font-size:1.8rem;color:var(--gold);}
+  .section-title{font-family:'Fredoka One',cursive;font-size:1.4rem;margin-bottom:16px;color:var(--blue);}
+  .divider{height:1px;background:rgba(255,255,255,.07);margin:20px 0;}
+  @media(max-width:640px){
+    .categories-grid{grid-template-columns:1fr 1fr;}
+    .letter-circle{width:120px;height:120px;}
+    .letter-circle span{font-size:4.5rem;}
+  }
+  `,
+
+  // ── WS PORUKE ────────────────────────────────────────
+  handleMessage(data) {
+    if(data.type==='room_list'){ geoRoomList=data.rooms; geoRenderRooms(); }
+    if(data.type==='joined_room'){
+      myRoomId=data.roomId; myRoomName=data.roomName;
+      roundTime=data.roundTime||120; me.isAdmin=data.isAdmin; currentAdminUser=data.adminUser;
+      document.getElementById('header-uname').textContent=me.username+(me.isAdmin?' 👑':'');
+      document.getElementById('lobby-room-name').textContent=data.roomName;
+      document.getElementById('chat-panel').style.display='flex';
+      totalScores={}; myLocked=false;
+      showScreen('lobby');
+      if(me.isAdmin) toast('👑 Ti si admin ove sobe!','var(--gold)');
+    }
+    if(data.type==='left_room'){
+      myRoomId=null; myRoomName=''; me.isAdmin=false; currentAdminUser=null;
+      document.getElementById('header-uname').textContent=me.username;
+      document.getElementById('chat-panel').style.display='none';
+      document.getElementById('chat-messages').innerHTML='';
+      showScreen('geo-rooms');
+    }
+    if(data.type==='room_deleted'){
+      toast('🗑️ '+data.msg,'var(--accent)');
+      myRoomId=null; myRoomName=''; me.isAdmin=false;
+      document.getElementById('chat-panel').style.display='none';
+      showScreen('geo-rooms');
+    }
+    if(data.type==='room_error'){
+      const je=document.getElementById('join-error');
+      if(je){ je.textContent=data.msg; je.style.display='block'; }
+      toast('❌ '+data.msg,'var(--accent)');
+    }
+    if(data.type==='players'){
+      lobbyPlayers=data.players; currentAdminUser=data.adminUser;
+      me.isAdmin=me.username===currentAdminUser;
+      document.getElementById('header-uname').textContent=me.username+(me.isAdmin?' 👑':'');
+      updateLobbyUI(); updatePresenceBar(lobbyPlayers);
+    }
+    if(data.type==='you_are_admin'){
+      me.isAdmin=true; currentAdminUser=me.username;
+      document.getElementById('header-uname').textContent=me.username+' 👑';
+      toast('👑 Ti si sada admin!','var(--gold)'); updateLobbyUI();
+    }
+    if(data.type==='kicked'){ alert(`🥾 ${data.msg}`); doLogout(); }
+    if(data.type==='game_start'){
+      gamePlayers=data.players; currentLetter=data.letter; roundTime=data.roundTime;
+      gameRound=1; submitted=new Set(); myAnswers={}; pendingRoundScores={};
+      showRoundLetter();
+    }
+    if(data.type==='player_submitted'){ submitted.add(data.username); updateSubmitted(); }
+    if(data.type==='all_answers'){ allAnswers=data.answers; clearInterval(timerInterval); buildScoringScreen(); showScreen('scoring'); }
+    if(data.type==='scores_update'){
+      Object.entries(data.roundScores).forEach(([u,p])=>{ totalScores[u]=(totalScores[u]||0)+p; });
+      pendingRoundScores=data.roundScores; buildResultsScreen(); showScreen('results');
+    }
+    if(data.type==='new_round'){
+      gamePlayers=data.players; currentLetter=data.letter; roundTime=data.roundTime;
+      gameRound++; submitted=new Set(); myAnswers={}; pendingRoundScores={};
+      showRoundLetter();
+    }
+    if(data.type==='letter_changed'){
+      currentLetter=data.letter;
+      document.getElementById('drawn-letter').textContent=data.letter;
+      document.getElementById('writing-letter').textContent=data.letter;
+      const acl=document.getElementById('admin-cur-letter'); if(acl) acl.textContent=data.letter;
+      document.querySelectorAll('[id^=cat-]').forEach(inp=>inp.placeholder=`Na slovo ${data.letter}...`);
+      toast(`🔄 Admin je promenio slovo na: ${data.letter}`,'var(--purple)');
+    }
+    if(data.type==='restart'){
+      totalScores={}; myLocked=false;
+      lobbyPlayers=data.players||[]; currentAdminUser=data.adminUser||currentAdminUser;
+      me.isAdmin=me.username===currentAdminUser;
+      document.getElementById('header-uname').textContent=me.username+(me.isAdmin?' 👑':'');
+      updateLobbyUI(); showScreen('lobby');
+    }
+    if(data.type==='room_created'){
+      myRoomId=data.roomId;
+      send({type:'join_room', roomId:data.roomId, password:'', gameType:'geo'});
+    }
+  },
+
+  // ── INIT ─────────────────────────────────────────────
+  init() {
+    // Poveži time buttons
+    document.querySelectorAll('.time-btn').forEach(btn=>{
+      btn.onclick=()=>{ document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active-time')); btn.classList.add('active-time'); roundTime=parseInt(btn.dataset.sec); };
+    });
+  }
+});
+
+// ── GEO ROOMS ──
+let geoRoomList = [];
+
+function geoRenderRooms(){
+  const grid=document.getElementById('geo-rooms-grid'); if(!grid) return;
+  if(!geoRoomList.length){
+    grid.innerHTML='<div class="empty-rooms"><div class="er-icon">🏠</div><p>Nema aktivnih soba.<br>Budi prvi — napravi sobu!</p></div>';
+    return;
+  }
+  grid.innerHTML='';
+  geoRoomList.forEach(r=>{
+    const isFull=r.playerCount>=r.maxPlayers;
+    const card=document.createElement('div');
+    card.className='room-card'+(isFull?' room-full':'')+(r.gameActive?' room-playing':'');
+    card.onclick=isFull?null:()=>geoTryJoinRoom(r.id,r.hasPassword);
+    card.innerHTML=`
+      <div class="room-count">${r.playerCount}/${r.maxPlayers} 👤</div>
+      <div class="room-name">🏠 ${r.name}</div>
+      <div class="room-meta">
+        <span>👤 ${r.owner}</span>
+        <span>⏱️ ${r.roundTime>0?Math.floor(r.roundTime/60)+'min':'∞'}</span>
+        ${r.hasPassword?'<span class="room-badge badge-lock">🔒 Lozinka</span>':''}
+        <span class="room-badge ${r.gameActive?'badge-playing':'badge-waiting'}">${r.gameActive?'🎮 U igri':'✅ Čeka'}</span>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function geoOpenCreateRoom(){
+  window._creatingGameType='geo';
+  document.getElementById('cr-name').value='';
+  document.getElementById('cr-password').value='';
+  document.getElementById('create-room-modal').style.display='block';
+  document.getElementById('cr-overlay').style.display='block';
+  setTimeout(()=>document.getElementById('cr-name').focus(),100);
+}
+
+function geoTryJoinRoom(roomId,hasPassword){
+  if(hasPassword){
+    pendingJoinRoomId=roomId;
+    document.getElementById('join-password').value='';
+    document.getElementById('join-error').style.display='none';
+    document.getElementById('join-modal').style.display='block';
+    document.getElementById('cr-overlay').style.display='block';
+    setTimeout(()=>document.getElementById('join-password').focus(),100);
+  } else {
+    send({type:'join_room', roomId, password:'', gameType:'geo'});
+  }
+}
+
+// ── LOBBY ──
+function leaveRoom(){
+  if(!confirm('Napustiš sobu?')) return;
+  send({type:'leave_room'});
+}
+
+function updateLobbyUI(){
+  const list=document.getElementById('lobby-list'); list.innerHTML='';
+  lobbyPlayers.forEach((p,i)=>{
+    const color=AVATAR_COLORS[i%AVATAR_COLORS.length];
+    const isMe=p.username===me.username;
+    const isAdm=p.username===currentAdminUser;
+    let adminBtns='';
+    if(me.isAdmin&&!isMe){
+      adminBtns=`<button class="kick-btn" onclick="kickPlayer('${p.username}')">🥾 Kick</button>
+        <button class="makeadmin-btn" onclick="transferAdmin('${p.username}')">👑 Admin</button>`;
+    }
+    const row=document.createElement('div'); row.className='player-row';
+    row.innerHTML=`
+      <div class="avatar" style="background:${color}20;color:${color};border:1.5px solid ${color}40">${p.username.slice(0,2).toUpperCase()}</div>
+      <div class="player-row-name">${p.username}${isAdm?'<span class="admin-badge">👑 Admin</span>':''}${isMe?'<span style="color:var(--soft);font-size:.72rem;margin-left:5px">(ti)</span>':''}</div>
+      <div class="activity-dot ${p.active!==false?'dot-active':'dot-away'}"></div>
+      <span class="status-chip ${p.locked?'chip-ready':'chip-wait'}">${p.locked?'✅ Spreman':'⏳ Čeka'}</span>
+      ${adminBtns}`;
+    list.appendChild(row);
+  });
+  const lockBtn=document.getElementById('btn-lock');
+  if(myLocked){ lockBtn.textContent='✅ Zaključan! (klikni da otključaš)'; lockBtn.className='btn btn-green'; }
+  else { lockBtn.textContent='🔓 Zaključaj se (spreman sam!)'; lockBtn.className='btn btn-blue'; }
+  const online=lobbyPlayers.length, locked=lobbyPlayers.filter(p=>p.locked).length, allReady=online>=2&&locked===online;
+  if(me.isAdmin){
+    document.getElementById('admin-panel').style.display='block';
+    document.getElementById('non-admin-wait').style.display='none';
+    document.getElementById('lobby-subtitle').textContent='Čekaonica — ti si admin 👑';
+    const startBtn=document.getElementById('btn-start');
+    startBtn.disabled=!allReady;
+    document.getElementById('start-hint').textContent=allReady?'✅ Svi su spremni!':`${locked}/${online} zaključano`;
+    document.getElementById('start-hint').style.color=allReady?'var(--green)':'var(--soft)';
+  } else {
+    document.getElementById('admin-panel').style.display='none';
+    document.getElementById('non-admin-wait').style.display='block';
+    document.getElementById('lobby-subtitle').textContent='Čekaonica';
+    document.getElementById('admin-name-lbl').textContent=currentAdminUser||'admin';
+  }
+}
+
+function sendToggleLock(){ myLocked=!myLocked; send({type:'toggle_lock',username:me.username,locked:myLocked}); }
+function kickPlayer(u){ if(!confirm(`Kick ${u}?`)) return; send({type:'kick_player',username:u}); }
+function transferAdmin(u){ if(!confirm(`Dati admin prava igraču ${u}?`)) return; send({type:'transfer_admin',username:u}); }
+
+// ── GAME ──
+const CATEGORIES=[
+  {key:'drzava',label:'Država',emoji:'🌍'},{key:'grad',label:'Grad',emoji:'🏙️'},
+  {key:'selo',label:'Selo',emoji:'🏡'},{key:'reka',label:'Reka',emoji:'🌊'},
+  {key:'planina',label:'Planina',emoji:'⛰️'},{key:'zivotinja',label:'Životinja',emoji:'🦁'},
+  {key:'biljka',label:'Biljka',emoji:'🌿'},{key:'predmet',label:'Predmet',emoji:'📦'},
+  {key:'ime',label:'Ime',emoji:'👤'},
+];
+const LETTER_POOL=['A','B','V','G','D','E','Ž','Z','I','K','L','M','N','O','P','R','S','T','U','F','H','C','Č','Š'];
+const SCORE_RULES={same:5,unique:10,bonus:20};
+let _letterBag=[];
+
+function randomLetter(exclude){
+  if(_letterBag.length===0) _letterBag=[...LETTER_POOL].sort(()=>Math.random()-.5);
+  if(exclude&&_letterBag.length>1){ const idx=_letterBag.indexOf(exclude); if(idx!==-1)_letterBag.splice(idx,1); }
+  return _letterBag.shift();
+}
+
+function adminStartGame(){ send({type:'start_game',letter:randomLetter(currentLetter),roundTime}); }
+
+function showRoundLetter(){
+  document.getElementById('round-lbl').textContent=`🎯 Runda ${gameRound}`;
+  const lEl=document.getElementById('drawn-letter');
+  lEl.textContent=currentLetter; lEl.classList.remove('rolling-letter'); void lEl.offsetWidth; lEl.classList.add('rolling-letter');
+  showScreen('letter');
+}
+
+function goToWriting(){
+  document.getElementById('writing-round-lbl').textContent=`🎯 Runda ${gameRound}`;
+  document.getElementById('writing-letter').textContent=currentLetter;
+  const grid=document.getElementById('writing-categories'); grid.innerHTML='';
+  myAnswers={};
+  CATEGORIES.forEach(c=>{
+    myAnswers[c.key]='';
+    const item=document.createElement('div'); item.className='category-item';
+    item.innerHTML=`<div class="category-label"><span>${c.emoji}</span>${c.label}</div>
+      <input type="text" id="cat-${c.key}" placeholder="Na slovo ${currentLetter}..." autocomplete="off">`;
+    grid.appendChild(item);
+  });
+  document.querySelectorAll('[id^=cat-]').forEach(inp=>{ const key=inp.id.replace('cat-',''); inp.oninput=()=>{myAnswers[key]=inp.value;}; });
+  document.getElementById('btn-submit').disabled=false;
+  document.getElementById('submitted-chips').innerHTML='';
+  submitted=new Set();
+  if(me.isAdmin){
+    document.getElementById('admin-change-letter').style.display='block';
+    const lb=document.getElementById('letter-btns'); lb.innerHTML='';
+    const randBtn=document.createElement('button');
+    randBtn.className='btn btn-sm'; randBtn.style.cssText='background:linear-gradient(135deg,var(--purple),#7c4dff);color:white;';
+    randBtn.innerHTML='🎲 Novo slovo';
+    randBtn.onclick=()=>{ send({type:'change_letter',letter:randomLetter(currentLetter)}); };
+    lb.appendChild(randBtn);
+    const cur=document.createElement('span');
+    cur.style.cssText='color:var(--gold);font-family:Fredoka One,cursive;font-size:1.3rem;display:flex;align-items:center;gap:6px;';
+    cur.innerHTML='Slovo: <span id="admin-cur-letter">'+currentLetter+'</span>';
+    lb.appendChild(cur);
+  } else {
+    document.getElementById('admin-change-letter').style.display='none';
+  }
+  showScreen('writing');
+  if(roundTime>0) startTimer();
+}
+
+function startTimer(){
+  let t=roundTime; updateTimer(t); clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{ t--; updateTimer(t); if(t<=0){clearInterval(timerInterval);submitAnswers();} },1000);
+}
+function updateTimer(t){
+  const m=Math.floor(t/60),s=t%60;
+  document.getElementById('timer-text').textContent=`${m}:${s.toString().padStart(2,'0')}`;
+  const pct=roundTime>0?(t/roundTime)*100:100;
+  document.getElementById('timer-fill').style.width=pct+'%';
+  if(pct<20) document.getElementById('timer-fill').style.background='var(--accent)';
+}
+
+function submitAnswers(){
+  clearInterval(timerInterval);
+  document.getElementById('btn-submit').disabled=true;
+  CATEGORIES.forEach(c=>{ const el=document.getElementById('cat-'+c.key); if(el){myAnswers[c.key]=el.value.trim();el.disabled=true;} });
+  send({type:'submit_answers',username:me.username,answers:myAnswers});
+  submitted.add(me.username); updateSubmitted();
+}
+function updateSubmitted(){
+  const el=document.getElementById('submitted-chips');
+  el.innerHTML=`<span style="color:var(--soft);font-size:.85rem">Predali: ${submitted.size}/${gamePlayers.length}</span> `+[...submitted].map(n=>`<span class="sub-chip">✓ ${n}</span>`).join('');
+}
+
+function normalizuj(str){ if(!str) return ''; return str.toLowerCase().trim().replace(/š/g,'s').replace(/č/g,'c').replace(/ć/g,'c').replace(/ž/g,'z').replace(/đ/g,'dj').replace(/dž/g,'dz').replace(/\s+/g,' '); }
+
+function calcCatScores(){
+  catScores={};
+  gamePlayers.forEach(p=>{catScores[p]={};});
+  CATEGORIES.forEach(c=>{
+    const valid={};
+    gamePlayers.forEach(p=>{ const val=((allAnswers[p]||{})[c.key]||'').trim(); if(val&&normalizuj(val[0]).toUpperCase()===normalizuj(currentLetter).toUpperCase()) valid[p]=normalizuj(val); });
+    const vals=Object.values(valid);
+    gamePlayers.forEach(p=>{
+      if(!valid[p]){catScores[p][c.key]=0;return;}
+      const sc=vals.filter(v=>v===valid[p]).length;
+      if(vals.length===1) catScores[p][c.key]=SCORE_RULES.bonus;
+      else if(sc>1) catScores[p][c.key]=SCORE_RULES.same;
+      else catScores[p][c.key]=SCORE_RULES.unique;
+    });
+  });
+}
+function getTotal(p){ return Object.values(catScores[p]||{}).reduce((a,b)=>a+b,0); }
+
+function buildScoringScreen(){
+  document.getElementById('scoring-round-lbl').textContent=`🎯 Runda ${gameRound}`;
+  calcCatScores();
+  const content=document.getElementById('scoring-content'); content.innerHTML='';
+  const table=document.createElement('div'); table.className='answers-review';
+  const cols=`140px ${gamePlayers.map(()=>'1fr').join(' ')}`;
+  const hdr=document.createElement('div');
+  hdr.style.cssText=`display:grid;grid-template-columns:${cols};gap:8px;padding:8px 0;border-bottom:2px solid rgba(255,255,255,.1);margin-bottom:4px`;
+  hdr.innerHTML=`<div style="font-size:.75rem;color:var(--soft);font-weight:700;text-transform:uppercase">Kategorija</div>`+gamePlayers.map(p=>`<div style="font-weight:800;font-size:.9rem;text-align:center">${p}</div>`).join('');
+  table.appendChild(hdr);
+  CATEGORIES.forEach(c=>{
+    const row=document.createElement('div');
+    row.style.cssText=`display:grid;grid-template-columns:${cols};gap:8px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center`;
+    let html=`<div style="font-size:.82rem;color:var(--soft)">${c.emoji} ${c.label}</div>`;
+    const scoringVals=gamePlayers.filter(p=>catScores[p][c.key]>0).map(p=>normalizuj(((allAnswers[p]||{})[c.key]||'')));
+    gamePlayers.forEach(p=>{
+      const val=((allAnswers[p]||{})[c.key]||'').trim();
+      const pts=catScores[p][c.key];
+      if(!val){html+=`<div style="text-align:center;color:rgba(255,255,255,.2);font-size:.85rem">—</div>`;return;}
+      const sc=scoringVals.filter(v=>v===normalizuj(val)).length;
+      let ptsColor,ptsLabel;
+      if(scoringVals.length===1&&pts>0){ptsColor='var(--green)';ptsLabel='jedini!';}
+      else if(sc>1){ptsColor='var(--gold)';ptsLabel='isti';}
+      else{ptsColor='var(--blue)';ptsLabel='jedinstven';}
+      const origPts=scoringVals.length===1?SCORE_RULES.bonus:sc>1?SCORE_RULES.same:SCORE_RULES.unique;
+      if(me.isAdmin){
+        html+=`<div style="text-align:center">
+          <div style="font-weight:700;font-size:.9rem">${val}</div>
+          <div id="pts-lbl-${p}-${c.key}" style="font-size:.75rem;color:${pts>0?ptsColor:'rgba(255,255,255,.3)'};font-weight:700;margin:2px 0">${pts>0?pts+' pts ('+ptsLabel+')':'0 pts (poništeno)'}</div>
+          <button id="pts-btn-${p}-${c.key}" onclick="toggleCat('${p}','${c.key}',${origPts},'${ptsColor}','${ptsLabel}')"
+            style="padding:3px 10px;border-radius:50px;border:none;cursor:pointer;font-size:.74rem;font-weight:700;background:${pts>0?'rgba(233,69,96,.2)':'rgba(78,203,113,.2)'};color:${pts>0?'var(--accent)':'var(--green)'};border:1px solid ${pts>0?'rgba(233,69,96,.3)':'rgba(78,203,113,.3)'}">${pts>0?'✕ Poništi':'↩ Vrati'}</button>
+        </div>`;
+      } else {
+        html+=`<div style="text-align:center"><div style="font-weight:700;font-size:.9rem">${val}</div><div style="font-size:.75rem;color:${pts>0?ptsColor:'rgba(255,255,255,.3)'};font-weight:700">${pts>0?pts+' pts':'0 pts'}</div></div>`;
+      }
+    });
+    row.innerHTML=html; table.appendChild(row);
+  });
+  const tot=document.createElement('div');
+  tot.style.cssText=`display:grid;grid-template-columns:${cols};gap:8px;padding:12px 0;border-top:2px solid rgba(255,255,255,.1);align-items:center`;
+  tot.innerHTML=`<div style="font-weight:800;color:var(--soft);font-size:.85rem">UKUPNO RUNDA</div>`+gamePlayers.map(p=>`<div id="total-cell-${p}" style="text-align:center;font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--gold)">${getTotal(p)}</div>`).join('');
+  table.appendChild(tot); content.appendChild(table);
+  const btns=document.getElementById('scoring-btns');
+  if(me.isAdmin){ document.getElementById('scoring-sub').textContent='Klikni Poništi ako odgovor nije validan'; btns.innerHTML=`<button class="btn btn-primary" onclick="adminFinishScoring()" style="font-size:1.1rem;padding:14px 40px">🏆 Zaključi rundu</button>`; }
+  else { document.getElementById('scoring-sub').textContent='Admin proverava odgovore...'; btns.innerHTML=`<div class="waiting-notice">⏳ Čekaj admina da zaključi rundu...</div>`; }
+}
+function toggleCat(player,catKey,origPts,color,label){
+  const cur=catScores[player][catKey]; catScores[player][catKey]=cur>0?0:origPts;
+  const newVal=catScores[player][catKey];
+  const lbl=document.getElementById(`pts-lbl-${player}-${catKey}`); const btn=document.getElementById(`pts-btn-${player}-${catKey}`);
+  if(lbl){lbl.textContent=newVal>0?`${newVal} pts (${label})`:'0 pts (poništeno)';lbl.style.color=newVal>0?color:'rgba(255,255,255,.3)';}
+  if(btn){btn.textContent=newVal>0?'✕ Poništi':'↩ Vrati';btn.style.background=newVal>0?'rgba(233,69,96,.2)':'rgba(78,203,113,.2)';btn.style.color=newVal>0?'var(--accent)':'var(--green)';}
+  const cell=document.getElementById(`total-cell-${player}`); if(cell) cell.textContent=getTotal(player);
+}
+function adminFinishScoring(){
+  pendingRoundScores={};
+  gamePlayers.forEach(p=>{pendingRoundScores[p]=getTotal(p);});
+  send({type:'finish_scoring',roundScores:pendingRoundScores});
+}
+function buildResultsScreen(){
+  document.getElementById('results-round-lbl').textContent=`📊 Nakon runde ${gameRound}`;
+  const sorted=gamePlayers.map(ime=>({ime,total:totalScores[ime]||0,round:pendingRoundScores[ime]||0})).sort((a,b)=>b.total-a.total);
+  const medals=['🥇','🥈','🥉'];
+  const lb=document.getElementById('leaderboard'); lb.innerHTML='';
+  sorted.forEach((p,rank)=>{
+    const item=document.createElement('div'); item.className='leaderboard-item'; item.style.animationDelay=(rank*.1)+'s';
+    item.innerHTML=`<div class="rank-badge">${medals[rank]||'#'+(rank+1)}</div><div class="lb-name">${p.ime}${p.ime===currentAdminUser?'<span class="admin-badge">👑</span>':''}</div><div style="text-align:right"><div class="lb-score">${p.total}</div><div style="font-size:.78rem;color:var(--soft)">+${p.round} ova runda</div></div>`;
+    lb.appendChild(item);
+  });
+  if(gameRound>1){
+    const hist=document.createElement('div'); hist.className='answers-review'; hist.style.marginTop='16px';
+    hist.innerHTML=`<h3>📈 Ukupan zbir</h3>`+sorted.map((p,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)"><span style="font-size:1.2rem">${medals[i]||'•'}</span><span style="flex:1;font-weight:700">${p.ime}</span><span style="font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--gold)">${p.total} pts</span></div>`).join('');
+    lb.appendChild(hist);
+  }
+  const btns=document.getElementById('results-btns');
+  if(me.isAdmin){
+    btns.innerHTML=`<button class="btn btn-green" onclick="adminNextRound()" style="font-size:1.1rem;padding:14px 34px">🎲 Sledeća runda!</button><button class="btn btn-outline" onclick="adminEndGame()" style="font-size:1.1rem;padding:14px 34px">🏠 Završi igru</button>`;
+  } else {
+    btns.innerHTML=`<div class="waiting-notice">⏳ Čekaj admina da pokrene sledeću rundu...</div>`;
+  }
+}
+function adminNextRound(){ send({type:'next_round',letter:randomLetter(currentLetter),roundTime,players:gamePlayers}); }
+function adminEndGame(){ send({type:'restart'}); totalScores={}; }
+function confirmLeaveGame(){ if(!confirm('Napusti igru i vrati se na izbor igara?')) return; clearInterval(timerInterval); send({type:'leave_room'}); }
+
+</script>
+<script>
+// imposter.js
+// ╔══════════════════════════════════════════════════════╗
+// ║  IGRA: Imposter                                      ║
+// ╚══════════════════════════════════════════════════════╝
+
+registerGame({
+  id: 'imposter',
+  name: 'Imposter',
+  icon: '🕵️',
+  desc: 'Ko nije dobio istu reč kao vi?',
+
+  screens: `
+  <!-- ══ IMPOSTER ROOMS ══ -->
+  <div class="screen" id="screen-imposter-rooms">
+    <div class="rooms-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-outline btn-sm" onclick="showScreen('home')">← Nazad</button>
+        <div>
+          <h2 style="font-family:'Fredoka One',cursive;font-size:1.4rem">🕵️ Imposter</h2>
+          <p style="color:var(--soft);font-size:.82rem;margin-top:2px">Uđi u sobu ili napravi svoju</p>
+        </div>
+      </div>
+      <button class="btn btn-green" onclick="impOpenCreateRoom()" style="white-space:nowrap">➕ Nova soba</button>
+    </div>
+    <div id="imposter-rooms-grid" class="rooms-grid">
+      <div class="empty-rooms"><div class="er-icon">🕵️</div><p>Nema aktivnih soba.<br>Budi prvi — napravi sobu!</p></div>
+    </div>
+  </div>
+
+  <!-- ══ IMPOSTER LOBBY ══ -->
+  <div class="screen" id="screen-imposter-lobby">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="impLeaveRoom()">← Izađi</button>
+      <div style="flex:1">
+        <div style="font-family:'Fredoka One',cursive;font-size:1.4rem">🕵️ <span id="imp-lobby-room-name">Soba</span></div>
+        <div style="color:var(--soft);font-size:.82rem">Čekaonica — spremi se za igru!</div>
+      </div>
+    </div>
+    <div class="card"><h2>👥 Igrači u sobi</h2><div id="imp-lobby-list"></div></div>
+    <div id="imp-admin-panel" style="display:none">
+      <div class="card">
+        <h2>⚙️ Reč za rundu <span class="admin-badge">👑 Samo za tebe</span></h2>
+        <div style="background:var(--deep);border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <div style="font-size:.78rem;color:var(--soft);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Odabrana reč</div>
+            <div id="imp-word-preview" style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--gold)">?</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="impRandomWord()">🎲 Promeni reč</button>
+        </div>
+        <div style="text-align:center">
+          <button class="btn btn-primary" onclick="impAdminStart()" style="font-size:1.1rem;padding:14px 44px">🕵️ Pokreni igru!</button>
+          <p style="color:var(--soft);font-size:.82rem;margin-top:8px">Random igrač će biti Imposter</p>
+        </div>
+      </div>
+    </div>
+    <div id="imp-non-admin" style="display:none">
+      <div class="waiting-notice">⏳ Čekaj da admin pokrene igru...</div>
+    </div>
+  </div>
+
+  <!-- ══ IMPOSTER ROLE ══ -->
+  <div class="screen" id="screen-imposter-role">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <button class="btn btn-outline btn-sm" onclick="impLeaveRoom()">← Izađi</button>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--soft)">🕵️ Tvoja uloga</div>
+    </div>
+    <div id="imp-cover" onclick="impReveal()" style="background:var(--card);border-radius:24px;padding:40px 28px;border:2px dashed rgba(255,255,255,.2);max-width:360px;margin:0 auto;text-align:center;cursor:pointer;transition:border-color .2s;">
+      <div style="font-size:4rem;margin-bottom:14px">👆</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;margin-bottom:8px">Tapni da vidiš ulogu</div>
+      <div style="color:var(--soft);font-size:.88rem">Pazi da niko drugi ne gleda!</div>
+    </div>
+    <div id="imp-reveal" style="display:none;text-align:center">
+      <div id="imp-card-crew" style="display:none;background:linear-gradient(135deg,rgba(78,203,113,.2),rgba(79,195,247,.2));border:2px solid rgba(78,203,113,.4);border-radius:24px;padding:36px 28px;max-width:360px;margin:0 auto">
+        <div style="font-size:3.5rem;margin-bottom:10px">✅</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--green);margin-bottom:10px">Crewmate</div>
+        <div style="color:var(--soft);font-size:.88rem;margin-bottom:8px">Tvoja tajna reč je:</div>
+        <div id="imp-word-display" style="font-family:'Fredoka One',cursive;font-size:3rem;background:rgba(255,255,255,.1);border-radius:16px;padding:16px 28px;letter-spacing:2px;display:inline-block;margin-top:8px"></div>
+        <div style="color:var(--soft);font-size:.82rem;margin-top:14px">Razgovarajte i pronađite Impostera!</div>
+      </div>
+      <div id="imp-card-imp" style="display:none;background:linear-gradient(135deg,rgba(233,69,96,.2),rgba(179,136,255,.2));border:2px solid rgba(233,69,96,.4);border-radius:24px;padding:36px 28px;max-width:360px;margin:0 auto">
+        <div style="font-size:3.5rem;margin-bottom:10px">🕵️</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--accent);margin-bottom:12px">Ti si Imposter!</div>
+        <div style="background:rgba(233,69,96,.12);border-radius:14px;padding:14px;color:var(--soft);font-size:.88rem;line-height:1.6">Ostali imaju tajnu reč, ti ne.<br>Blefuj i ne daj se otkriti! 😈</div>
+      </div>
+      <button class="btn btn-outline" onclick="impHide()" style="margin-top:16px">🙈 Sakrij ulogu</button>
+    </div>
+    <div style="padding:0 16px;margin-top:24px">
+      <button onclick="impGoToVote()" style="background:linear-gradient(135deg,#e94560,#c0392b);color:white;border:none;border-radius:20px;padding:18px 40px;font-family:'Fredoka One',cursive;font-size:1.5rem;cursor:pointer;width:100%;box-shadow:0 0 30px rgba(233,69,96,.6);animation:pulse 1.5s infinite;letter-spacing:1px;">🚨 UZBUNA — Glasaj ko je Imposter!</button>
+    </div>
+  </div>
+
+  <!-- ══ IMPOSTER GLASANJE ══ -->
+  <div class="screen" id="screen-imposter-vote">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <button class="btn btn-outline btn-sm" onclick="showScreen('imposter-role')">← Nazad</button>
+      <div>
+        <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--accent)">🚨 Glasanje</div>
+        <div style="color:var(--soft);font-size:.82rem">Ko je Imposter?</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <h2>🗳️ Glasaj za Impostera</h2>
+      <p style="color:var(--soft);font-size:.88rem;margin-bottom:16px">Klikni na igrača za koga misliš da je Imposter</p>
+      <div id="imp-vote-players"></div>
+    </div>
+    <div class="card">
+      <h2>📊 Rezultati glasanja</h2>
+      <div id="imp-vote-results"></div>
+    </div>
+    <div style="text-align:center;margin-top:16px">
+      <div id="imp-reveal-admin-btn" style="display:none">
+        <button class="btn btn-primary" onclick="impAdminReveal()" style="font-size:1.05rem;padding:14px 40px">🎭 Otkrij Impostera!</button>
+      </div>
+      <div id="imp-reveal-wait" style="display:none">
+        <div class="waiting-notice">⏳ Čekaj admina da otkrije Impostera...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ IMPOSTER OTKRIVANJE ══ -->
+  <div class="screen" id="screen-imposter-reveal">
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-size:3rem;margin-bottom:8px">🎭</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:2rem;margin-bottom:28px;background:linear-gradient(135deg,var(--accent),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Otkrivanje!</div>
+      <div class="card" style="max-width:400px;margin:0 auto 16px">
+        <div style="font-size:.82rem;color:var(--soft);margin-bottom:6px;text-transform:uppercase;font-weight:700;letter-spacing:1px">Tajna reč bila je</div>
+        <div id="imp-reveal-word" style="font-family:'Fredoka One',cursive;font-size:3rem;color:var(--gold)"></div>
+      </div>
+      <div class="card" style="max-width:400px;margin:0 auto 16px">
+        <div style="font-size:.82rem;color:var(--soft);margin-bottom:10px;text-transform:uppercase;font-weight:700;letter-spacing:1px">Imposter je bio</div>
+        <div id="imp-reveal-name" style="font-family:'Fredoka One',cursive;font-size:2.2rem;color:var(--accent)"></div>
+        <div style="font-size:3.5rem;margin-top:6px">🕵️</div>
+      </div>
+      <div class="card" style="max-width:400px;margin:0 auto 24px">
+        <div style="font-size:.82rem;color:var(--soft);margin-bottom:10px;text-transform:uppercase;font-weight:700;letter-spacing:1px">Glasanje</div>
+        <div id="imp-final-vote-results"></div>
+      </div>
+      <div id="imp-reveal-btns"></div>
+    </div>
+  </div>
+  `,
+
+  css: `
+  .vote-player-btn{display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:2px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 18px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:1rem;color:var(--text);transition:all .2s;margin-bottom:10px;}
+  .vote-player-btn:hover{border-color:var(--accent);background:rgba(233,69,96,.1);}
+  .vote-player-btn.voted{border-color:var(--accent);background:rgba(233,69,96,.2);}
+  .vote-count{margin-left:auto;background:var(--accent);color:white;border-radius:50px;padding:2px 12px;font-family:'Fredoka One',cursive;font-size:1rem;}
+  .vote-count.zero{background:rgba(255,255,255,.1);color:var(--soft);}
+  `,
+
+  handleMessage(data) {
+    if(data.type==='imposter_room_list'){ impRoomList=data.rooms; impRenderRooms(); }
+    if(data.type==='imposter_joined'){
+      impMyRoomId=data.roomId; currentAdminUser=data.adminUser;
+      me.isAdmin=data.isAdmin;
+      document.getElementById('header-uname').textContent=me.username+(me.isAdmin?' 👑':'');
+      document.getElementById('imp-lobby-room-name').textContent=data.roomName;
+      impCurrentWord=''; impRandomWord();
+      impUpdateLobbyUI();
+      showScreen('imposter-lobby');
+      if(me.isAdmin) toast('👑 Ti si admin ove sobe!','var(--gold)');
+    }
+    if(data.type==='imposter_players'){
+      impLobbyPlayers=data.players; currentAdminUser=data.adminUser;
+      me.isAdmin=me.username===currentAdminUser;
+      document.getElementById('header-uname').textContent=me.username+(me.isAdmin?' 👑':'');
+      impUpdateLobbyUI();
+    }
+    if(data.type==='imposter_role'){
+      impState.myRole=data.role; impState.myWord=data.word||null; impState.players=data.players; impState.votes={};
+      document.getElementById('imp-cover').style.display='block';
+      document.getElementById('imp-reveal').style.display='none';
+      document.getElementById('imp-card-crew').style.display='none';
+      document.getElementById('imp-card-imp').style.display='none';
+      showScreen('imposter-role');
+    }
+    if(data.type==='imposter_vote_update'){ impState.votes=data.votes; impRenderVotes(); }
+    if(data.type==='imposter_reveal'){ impState.word=data.word; impState.imposter=data.imposter; impShowReveal(); }
+    if(data.type==='imposter_left'){ impMyRoomId=null; impLobbyPlayers=[]; showScreen('imposter-rooms'); }
+    if(data.type==='room_created' && window._creatingGameType==='imposter'){
+      window._creatingGameType=null;
+      send({type:'imposter_join_room', roomId:data.roomId, password:''});
+    }
+  },
+
+  init() {}
+});
+
+// ── STATE ──
+const IMP_WORDS=['igla','lopta','stolica','telefon','auto','sunce','drvo','knjiga','cipela','kafa','prozor','sat','lampa','novac','pas','mačka','hleb','voda','more','planina','vetar','kiša','sneg','vatra','brod','avion','bicikl','muzika','film','slika','torba','kaput','ključ','ogledalo','šešir','rukavice','sveća','med','so','šećer','banana','jabuka','narandža','limun','jagoda','lubenica','grožđe','gitara','bubanj','klavir','violina','fudbal','košarka','tenis','plivanje','skijanje','boks'];
+let impState={myRole:null,myWord:null,players:[],word:null,imposter:null,votes:{}};
+let impMyRoomId=null;
+let impLobbyPlayers=[];
+let impCurrentWord='';
+let impRoomList=[];
+
+// ── SOBE ──
+function impRenderRooms(){
+  const grid=document.getElementById('imposter-rooms-grid'); if(!grid) return;
+  if(!impRoomList.length){
+    grid.innerHTML='<div class="empty-rooms"><div class="er-icon">🕵️</div><p>Nema aktivnih soba.<br>Budi prvi — napravi sobu!</p></div>'; return;
+  }
+  grid.innerHTML=impRoomList.map(r=>`
+    <div class="room-card ${r.gameActive?'room-playing':''}" onclick="impTryJoinRoom('${r.id}',${r.hasPassword})">
+      <div class="room-count">${r.playerCount}/${r.maxPlayers} 👤</div>
+      <div class="room-name">🕵️ ${r.name}</div>
+      <div class="room-meta">
+        <span>👤 ${r.owner}</span>
+        ${r.hasPassword?'<span class="room-badge badge-lock">🔒 Lozinka</span>':''}
+        <span class="room-badge ${r.gameActive?'badge-playing':'badge-waiting'}">${r.gameActive?'🎮 U igri':'✅ Čeka'}</span>
+      </div>
+    </div>`).join('');
+}
+
+function impOpenCreateRoom(){
+  window._creatingGameType='imposter';
+  document.getElementById('cr-name').value='';
+  document.getElementById('cr-password').value='';
+  document.getElementById('create-room-modal').style.display='block';
+  document.getElementById('cr-overlay').style.display='block';
+  setTimeout(()=>document.getElementById('cr-name').focus(),100);
+}
+
+function impTryJoinRoom(roomId,hasPassword){
+  if(hasPassword){
+    pendingJoinRoomId=roomId; window._joiningImposterRoom=true;
+    document.getElementById('join-password').value='';
+    document.getElementById('join-error').style.display='none';
+    document.getElementById('join-modal').style.display='block';
+    document.getElementById('cr-overlay').style.display='block';
+  } else {
+    send({type:'imposter_join_room',roomId,password:''});
+  }
+}
+
+// ── LOBBY ──
+function impUpdateLobbyUI(){
+  const list=document.getElementById('imp-lobby-list'); if(!list) return;
+  list.innerHTML=impLobbyPlayers.map((p,i)=>{
+    const color=AVATAR_COLORS[i%AVATAR_COLORS.length];
+    const isMe=p.username===me.username, isAdm=p.username===currentAdminUser;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="width:36px;height:36px;border-radius:50%;background:${color}20;color:${color};border:1.5px solid ${color}40;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;flex-shrink:0">${p.username.slice(0,2).toUpperCase()}</div>
+      <div style="flex:1;font-weight:700">${p.username}${isAdm?'<span class="admin-badge">👑</span>':''}${isMe?'<span style="color:var(--soft);font-size:.72rem;margin-left:5px">(ti)</span>':''}</div>
+      <span style="padding:4px 12px;border-radius:50px;font-size:.76rem;font-weight:700;background:rgba(79,195,247,.1);color:var(--blue);border:1px solid rgba(79,195,247,.2)">🟢 Online</span>
+    </div>`;
+  }).join('');
+  if(me.isAdmin){
+    document.getElementById('imp-admin-panel').style.display='block';
+    document.getElementById('imp-non-admin').style.display='none';
+    if(!impCurrentWord) impRandomWord();
+  } else {
+    document.getElementById('imp-admin-panel').style.display='none';
+    document.getElementById('imp-non-admin').style.display='block';
+  }
+}
+
+function impRandomWord(){
+  impCurrentWord=IMP_WORDS[Math.floor(Math.random()*IMP_WORDS.length)];
+  const el=document.getElementById('imp-word-preview'); if(el) el.textContent=impCurrentWord;
+}
+
+function impAdminStart(){
+  if(!impCurrentWord) impRandomWord();
+  const online=impLobbyPlayers.map(p=>p.username);
+  if(online.length<2){toast('Potrebna su minimum 2 igrača!','var(--accent)');return;}
+  const imposter=online[Math.floor(Math.random()*online.length)];
+  send({type:'imposter_start',roomId:impMyRoomId,word:impCurrentWord,imposter,players:online});
+}
+
+function impLeaveRoom(){
+  send({type:'imposter_leave',roomId:impMyRoomId});
+  impMyRoomId=null; impLobbyPlayers=[]; impState={myRole:null,myWord:null,players:[],word:null,imposter:null,votes:{}};
+  showScreen('imposter-rooms');
+}
+
+// ── ROLE ──
+function impReveal(){
+  document.getElementById('imp-cover').style.display='none';
+  document.getElementById('imp-reveal').style.display='block';
+  if(impState.myRole==='imposter') document.getElementById('imp-card-imp').style.display='block';
+  else { document.getElementById('imp-card-crew').style.display='block'; document.getElementById('imp-word-display').textContent=impState.myWord||''; }
+}
+function impHide(){ document.getElementById('imp-cover').style.display='block'; document.getElementById('imp-reveal').style.display='none'; }
+
+// ── GLASANJE ──
+function impGoToVote(){
+  impRenderVotes();
+  document.getElementById('imp-reveal-admin-btn').style.display=me.isAdmin?'block':'none';
+  document.getElementById('imp-reveal-wait').style.display=me.isAdmin?'none':'block';
+  showScreen('imposter-vote');
+}
+
+function impRenderVotes(){
+  const container=document.getElementById('imp-vote-players'); if(!container) return;
+  const votes=impState.votes||{};
+  const voteCounts={};
+  impState.players.forEach(p=>{voteCounts[p]=0;});
+  Object.values(votes).forEach(t=>{if(voteCounts[t]!==undefined)voteCounts[t]++;});
+  const myVote=votes[me.username];
+  container.innerHTML=impState.players.filter(p=>p!==me.username).map((p,i)=>{
+    const color=AVATAR_COLORS[i%AVATAR_COLORS.length];
+    const count=voteCounts[p]||0, isVoted=myVote===p;
+    return `<button class="vote-player-btn ${isVoted?'voted':''}" onclick="impCastVote('${p}')">
+      <div style="width:36px;height:36px;border-radius:50%;background:${color}20;color:${color};border:1.5px solid ${color}40;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;flex-shrink:0">${p.slice(0,2).toUpperCase()}</div>
+      <div style="flex:1;text-align:left">${p}${isVoted?' ✓':''}</div>
+      <div class="vote-count ${count===0?'zero':''}">${count} ${count===1?'glas':'glasova'}</div>
+    </button>`;
+  }).join('');
+  const results=document.getElementById('imp-vote-results'); if(!results) return;
+  results.innerHTML=Object.entries(voteCounts).sort((a,b)=>b[1]-a[1]).map(([p,c])=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+      <div style="flex:1;font-weight:700">${p}</div>
+      <div style="background:rgba(255,255,255,.08);border-radius:50px;height:8px;flex:2;overflow:hidden"><div style="height:100%;border-radius:50px;background:var(--accent);width:${impState.players.length>1?c/(impState.players.length-1)*100:0}%;transition:width .4s"></div></div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.1rem;color:var(--gold);min-width:24px;text-align:right">${c}</div>
+    </div>`).join('');
+}
+
+function impCastVote(target){
+  impState.votes[me.username]=target;
+  send({type:'imposter_vote',roomId:impMyRoomId,voter:me.username,target});
+  impRenderVotes(); toast(`Glasao si za: ${target}`,'var(--accent)');
+}
+
+function impAdminReveal(){ send({type:'imposter_reveal_req',roomId:impMyRoomId}); }
+
+function impShowReveal(){
+  document.getElementById('imp-reveal-word').textContent=impState.word||'?';
+  document.getElementById('imp-reveal-name').textContent=impState.imposter||'?';
+  const votes=impState.votes||{}, voteCounts={};
+  impState.players.forEach(p=>{voteCounts[p]=0;});
+  Object.values(votes).forEach(t=>{if(voteCounts[t]!==undefined)voteCounts[t]++;});
+  document.getElementById('imp-final-vote-results').innerHTML=Object.entries(voteCounts).sort((a,b)=>b[1]-a[1]).map(([p,c])=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span style="flex:1;font-weight:700${p===impState.imposter?';color:var(--accent)':''}">${p}${p===impState.imposter?' 🕵️':''}</span>
+      <span style="font-family:'Fredoka One',cursive;color:var(--gold)">${c} ${c===1?'glas':'glasova'}</span>
+    </div>`).join('');
+  const btns=document.getElementById('imp-reveal-btns');
+  if(me.isAdmin){
+    btns.innerHTML=`<button class="btn btn-green" onclick="impPlayAgain()" style="font-size:1.05rem;padding:14px 34px;margin:6px">🔄 Nova runda</button><button class="btn btn-outline" onclick="impLeaveRoom()" style="font-size:1.05rem;padding:14px 34px;margin:6px">🏠 Izađi</button>`;
+  } else {
+    btns.innerHTML=`<button class="btn btn-outline" onclick="impLeaveRoom()" style="margin:6px">🏠 Izađi</button>`;
+  }
+  showScreen('imposter-reveal');
+}
+
+function impPlayAgain(){
+  impState={myRole:null,myWord:null,players:[],word:null,imposter:null,votes:{}};
+  impCurrentWord=''; impRandomWord(); impUpdateLobbyUI(); showScreen('imposter-lobby');
+}
+
+</script>
+
+</body>
+</html>
