@@ -1,0 +1,12 @@
+{
+  "name": "geoigre",
+  "version": "1.0.0",
+  "description": "GeoIgre - Zanimljiva Geografija i Imposter",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
