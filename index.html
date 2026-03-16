@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoIgre</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--sky:#1a1a2e;--deep:#16213e;--card:#0f3460;--accent:#e94560;--gold:#f5a623;--green:#4ecb71;--blue:#4fc3f7;--purple:#b388ff;--text:#f0f0f0;--soft:#a8b2c8;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Nunito',sans-serif;background:var(--sky);color:var(--text);min-height:100vh;overflow-x:hidden;padding-top:32px;
+    background-image:radial-gradient(ellipse at 20% 10%,rgba(233,69,96,.15) 0%,transparent 50%),radial-gradient(ellipse at 80% 90%,rgba(79,195,247,.12) 0%,transparent 50%);}
+  .stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;}
+  .star{position:absolute;background:white;border-radius:50%;animation:twinkle 3s infinite alternate;}
+  @keyframes twinkle{from{opacity:.2}to{opacity:.9}}
+  .container{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:20px;}
+  .screen{display:none;animation:fadeIn .4s ease;}
+  .screen.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+  @keyframes rollIn{0%{transform:rotateY(90deg) scale(.5);opacity:0}100%{transform:rotateY(0) scale(1);opacity:1}}
+  @keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* WS BAR */
+  #wsBar{position:fixed;top:0;left:0;width:100%;padding:6px;font-size:13px;font-weight:700;text-align:center;z-index:999;}
+  #wsBar.connecting{background:#ff9800;color:white;}
+  #wsBar.connected{background:#2e7d32;color:white;}
+  #wsBar.disconnected{background:#c62828;color:white;}
+
+  /* HEADER */
+  .header{display:none;justify-content:space-between;align-items:center;padding:14px 0;margin-bottom:8px;}
+  .header.show{display:flex;}
+  .logo{font-family:'Fredoka One',cursive;font-size:1.8rem;background:linear-gradient(135deg,var(--gold),var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .user-chip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border-radius:50px;padding:6px 16px;font-weight:700;}
+  .user-chip .dot{width:8px;height:8px;background:var(--green);border-radius:50%;}
+  .logout-btn{background:rgba(233,69,96,.12);border:1px solid rgba(233,69,96,.3);color:var(--accent);border-radius:50px;padding:6px 14px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;}
+
+  /* BUTTONS */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 28px;border-radius:50px;border:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;transition:transform .15s,box-shadow .15s;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn:active{transform:translateY(0);}
+  .btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),#c0392b);color:white;box-shadow:0 4px 20px rgba(233,69,96,.4);}
+  .btn-gold{background:linear-gradient(135deg,var(--gold),#e67e22);color:white;box-shadow:0 4px 20px rgba(245,166,35,.4);}
+  .btn-green{background:linear-gradient(135deg,var(--green),#27ae60);color:white;box-shadow:0 4px 20px rgba(78,203,113,.35);}
+  .btn-blue{background:linear-gradient(135deg,var(--blue),#0288d1);color:white;box-shadow:0 4px 20px rgba(79,195,247,.35);}
+  .btn-outline{background:transparent;border:2px solid var(--soft);color:var(--soft);}
+  .btn-sm{padding:7px 16px;font-size:.82rem;}
+  .btn-xs{padding:4px 10px;font-size:.75rem;}
+  .time-btn{background:rgba(255,255,255,.07);color:var(--soft);border:1.5px solid rgba(255,255,255,.15);}
+  .time-btn.active-time{border-color:var(--blue);color:var(--blue);background:rgba(79,195,247,.1);}
+  .flex-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+
+  /* LOGIN */
+  .login-wrap{max-width:420px;margin:30px auto;background:var(--card);border-radius:24px;padding:40px 36px;border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 80px rgba(0,0,0,.5);}
+  .login-title{font-family:'Fredoka One',cursive;font-size:1.8rem;color:var(--blue);text-align:center;margin-bottom:6px;}
+  .login-sub{color:var(--soft);text-align:center;font-size:.9rem;margin-bottom:28px;}
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:.8rem;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+  .field input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);border-radius:12px;padding:13px 16px;color:var(--text);font-family:'Nunito',sans-serif;font-size:1rem;transition:border .2s;}
+  .field input:focus{outline:none;border-color:var(--blue);}
+  .error-box{background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.4);border-radius:10px;padding:10px 14px;color:#ff8fa3;font-size:.88rem;font-weight:700;margin-bottom:16px;display:none;}
+
+  /* HOME */
+  .home-welcome h2{font-family:'Fredoka One',cursive;font-size:1.6rem;margin-bottom:4px;}
+  .home-welcome p{color:var(--soft);font-size:.95rem;margin-bottom:24px;}
+  .games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;}
+  .game-card{background:var(--card);border-radius:20px;padding:24px 16px;text-align:center;border:1.5px solid rgba(255,255,255,.08);cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;position:relative;overflow:hidden;}
+  .game-card:hover{transform:translateY(-6px);box-shadow:0 16px 40px rgba(0,0,0,.4);border-color:rgba(79,195,247,.4);}
+  .game-card.locked-card{opacity:.4;cursor:not-allowed;}
+  .game-card.locked-card:hover{transform:none;box-shadow:none;}
+  .game-icon{font-size:3.5rem;margin-bottom:12px;display:block;}
+  .game-title{font-family:'Fredoka One',cursive;font-size:1.1rem;margin-bottom:4px;}
+  .game-desc{font-size:.78rem;color:var(--soft);}
+  .soon-badge{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.1);border-radius:50px;padding:2px 8px;font-size:.7rem;font-weight:700;color:var(--soft);}
+
+  /* LOBBY */
+  .card{background:var(--card);border-radius:20px;padding:24px 28px;border:1px solid rgba(255,255,255,.08);box-shadow:0 20px 60px rgba(0,0,0,.4);margin-bottom:16px;}
+  .card h2{font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--blue);margin-bottom:16px;}
+  .player-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+  .player-row:last-child{border-bottom:none;}
+  .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;flex-shrink:0;}
+  .player-row-name{flex:1;font-weight:700;font-size:.95rem;}
+  .status-chip{padding:4px 12px;border-radius:50px;font-size:.76rem;font-weight:700;white-space:nowrap;}
+  .chip-ready{background:rgba(78,203,113,.2);color:var(--green);border:1px solid rgba(78,203,113,.3);}
+  .chip-wait{background:rgba(168,178,200,.1);color:var(--soft);border:1px solid rgba(168,178,200,.2);}
+  .admin-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.3);border-radius:50px;padding:2px 9px;font-size:.72rem;font-weight:700;color:var(--gold);margin-left:5px;}
+  .kick-btn{background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.3);color:var(--accent);border-radius:50px;padding:4px 10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.74rem;cursor:pointer;transition:all .2s;white-space:nowrap;}
+  .kick-btn:hover{background:rgba(233,69,96,.3);}
+  .makeadmin-btn{background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.3);color:var(--gold);border-radius:50px;padding:4px 10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.74rem;cursor:pointer;transition:all .2s;white-space:nowrap;}
+  .makeadmin-btn:hover{background:rgba(245,166,35,.3);}
+  .waiting-notice{background:rgba(79,195,247,.08);border:1px solid rgba(79,195,247,.2);border-radius:14px;padding:16px 20px;text-align:center;color:var(--blue);font-weight:700;animation:pulse 2s infinite;}
+
+  /* LETTER */
+  .letter-display{text-align:center;margin:30px 0;}
+  .letter-circle{width:160px;height:160px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 0 60px rgba(233,69,96,.5);animation:pop .5s cubic-bezier(.34,1.56,.64,1);}
+  .letter-circle span{font-family:'Fredoka One',cursive;font-size:6rem;color:white;}
+  .rolling-letter{display:inline-block;animation:rollIn .8s cubic-bezier(.34,1.56,.64,1);}
+
+  /* WRITING */
+  .categories-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:20px 0;}
+  .category-item{background:var(--deep);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 16px;transition:border-color .2s;}
+  .category-item:focus-within{border-color:var(--blue);}
+  .category-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--soft);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .category-item input{width:100%;background:transparent;border:none;border-bottom:1.5px solid rgba(255,255,255,.15);border-radius:0;padding:4px 0;font-size:1rem;font-weight:700;color:white;}
+  .category-item input:focus{outline:none;border-bottom-color:var(--blue);}
+  .category-item input:disabled{opacity:.4;}
+  .timer-bar{background:rgba(255,255,255,.08);border-radius:50px;height:8px;margin:16px 0;overflow:hidden;}
+  .timer-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,var(--green),var(--gold),var(--accent));transition:width 1s linear;}
+  .timer-text{text-align:right;font-size:.85rem;color:var(--soft);margin-bottom:4px;font-weight:700;}
+  .submitted-chips{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+  .sub-chip{background:rgba(78,203,113,.15);border:1px solid rgba(78,203,113,.3);border-radius:50px;padding:4px 12px;font-size:.82rem;font-weight:700;color:var(--green);}
+
+  /* SCORING */
+  .answers-review{background:var(--deep);border-radius:16px;padding:20px;margin:16px 0;border:1px solid rgba(255,255,255,.07);}
+  .answers-review h3{font-size:1rem;color:var(--soft);margin-bottom:14px;font-weight:700;}
+
+  /* LEADERBOARD */
+  .leaderboard-item{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:14px;padding:16px 20px;margin-bottom:10px;border:1.5px solid rgba(255,255,255,.06);animation:slideIn .4s ease backwards;}
+  .leaderboard-item:nth-child(1){border-color:rgba(245,166,35,.4)}
+  .leaderboard-item:nth-child(2){border-color:rgba(192,192,192,.3)}
+  .leaderboard-item:nth-child(3){border-color:rgba(205,127,50,.3)}
+  .rank-badge{font-family:'Fredoka One',cursive;font-size:1.6rem;width:40px;text-align:center;}
+  .lb-name{flex:1;font-weight:800;font-size:1.1rem;}
+  .lb-score{font-family:'Fredoka One',cursive;font-size:1.8rem;color:var(--gold);}
+  .round-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border-radius:50px;padding:6px 14px;font-size:.85rem;font-weight:700;color:var(--soft);margin-bottom:16px;}
+  .section-title{font-family:'Fredoka One',cursive;font-size:1.4rem;margin-bottom:16px;color:var(--blue);}
+  .divider{height:1px;background:rgba(255,255,255,.07);margin:20px 0;}
+  .celebration{font-size:3rem;text-align:center;padding:10px;animation:bounce .5s infinite alternate;}
+  .winner-name{font-family:'Fredoka One',cursive;font-size:2rem;text-align:center;background:linear-gradient(135deg,var(--gold),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+  /* TOAST */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:12px 24px;font-weight:700;font-size:.95rem;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+  #toast.show{opacity:1;}
+
+  @media(max-width:600px){.categories-grid{grid-template-columns:1fr 1fr}.login-wrap{padding:28px 20px}}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div id="wsBar" class="disconnected">⚫ Nije povezano na server</div>
+<div id="toast"></div>
+
+<div class="container">
+  <!-- HEADER -->
+  <div class="header" id="main-header">
+    <div class="logo">🌍 GeoIgre</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="user-chip"><div class="dot"></div><span id="header-uname">-</span></div>
+      <button class="logout-btn" onclick="doLogout()">Odjavi se</button>
+    </div>
+  </div>
+
+  <!-- ══ LOGIN ══ -->
+  <div class="screen active" id="screen-login">
+    <div style="text-align:center;padding:28px 0 0"><div style="font-size:3rem">🌍</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:2.2rem;background:linear-gradient(135deg,var(--gold),var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">GeoIgre</div>
+    </div>
+    <div class="login-wrap">
+      <div class="login-title">🔐 Prijava</div>
+      <p class="login-sub">Uloguj se i igraj sa prijateljima!</p>
+      <div class="field"><label>Korisničko ime</label>
+        <input type="text" id="login-username" placeholder="Tvoje ime..." autocomplete="off"></div>
+      <div class="field"><label>Lozinka</label>
+        <input type="password" id="login-password" placeholder="••••••"></div>
+      <div class="error-box" id="login-error">Greška!</div>
+      <button class="btn btn-primary" style="width:100%;font-size:1.05rem;padding:14px" onclick="doLogin()">Prijavi se →</button>
+    </div>
+  </div>
+
+  <!-- ══ HOME ══ -->
+  <div class="screen" id="screen-home">
+    <div class="home-welcome">
+      <h2>Dobrodošao, <span id="home-uname" style="color:var(--blue)">-</span>! 👋</h2>
+      <p>Izaberi igru i zabavi se sa prijateljima</p>
+    </div>
+    <div class="games-grid">
+      <div class="game-card" onclick="enterLobby()">
+        <span class="game-icon">🗺️</span>
+        <div class="game-title">Zanimljiva Geografija</div>
+        <div class="game-desc">Država, grad, reka, planina i još mnogo toga!</div>
+      </div>
+      <div class="game-card" onclick="enterImposterLobby()">
+        <span class="game-icon">🕵️</span>
+        <div class="game-title">Imposter</div>
+        <div class="game-desc">Ko nije dobio istu reč kao vi?</div>
+      </div>
+      <div class="game-card locked-card"><span class="soon-badge">Uskoro</span><span class="game-icon">🧠</span><div class="game-title">Kviz Znanja</div><div class="game-desc">100 pitanja</div></div>
+      <div class="game-card locked-card"><span class="soon-badge">Uskoro</span><span class="game-icon">✏️</span><div class="game-title">Pictionary</div><div class="game-desc">Crtaj i pogađaj</div></div>
+    </div>
+  </div>
+
+  <!-- ══ LOBBY ══ -->
+  <div class="screen" id="screen-lobby">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <button class="btn btn-outline btn-sm" onclick="showScreen('home')">← Nazad</button>
+      <div><div style="font-family:'Fredoka One',cursive;font-size:1.4rem">🗺️ Zanimljiva Geografija</div>
+        <div style="color:var(--soft);font-size:.82rem" id="lobby-subtitle">Čekaonica</div></div>
+    </div>
+    <div class="card"><h2>👥 Igrači u sobi</h2><div id="lobby-list"></div></div>
+    <div style="text-align:center;margin-bottom:16px">
+      <button class="btn btn-blue" id="btn-lock" onclick="sendToggleLock()" style="font-size:1.05rem;padding:14px 36px">🔓 Zaključaj se!</button>
+      <p style="color:var(--soft);font-size:.82rem;margin-top:8px">Svi moraju da se zaključaju pre početka</p>
+    </div>
+    <div id="admin-panel" style="display:none">
+      <div class="card">
+        <h2>⚙️ Podešavanja <span class="admin-badge">👑 Samo za tebe</span></h2>
+        <div style="background:var(--deep);border-radius:14px;padding:16px;margin-bottom:16px">
+          <div style="font-size:.8rem;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">⏱️ Vreme po rundi</div>
+          <div class="flex-row">
+            <button class="btn btn-sm time-btn" data-sec="60">1 min</button>
+            <button class="btn btn-sm time-btn active-time" data-sec="120">2 min</button>
+            <button class="btn btn-sm time-btn" data-sec="180">3 min</button>
+            <button class="btn btn-sm time-btn" data-sec="0">Bez tajmera</button>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <button class="btn btn-primary" id="btn-start" disabled onclick="adminStartGame()" style="font-size:1.05rem;padding:14px 40px">🎲 Pokreni igru!</button>
+          <p style="color:var(--soft);font-size:.82rem;margin-top:8px" id="start-hint">Čekaj da se svi zaključaju...</p>
+        </div>
+      </div>
+    </div>
+    <div id="non-admin-wait" style="display:none">
+      <div class="waiting-notice">⏳ Čekaj admina (<span id="admin-name-lbl">-</span>) da pokrene igru...</div>
+    </div>
+  </div>
+
+  <!-- ══ LETTER ══ -->
+  <div class="screen" id="screen-letter">
+    <div class="round-badge" id="round-lbl">🎯 Runda 1</div>
+    <div class="letter-display">
+      <div class="letter-circle"><span id="drawn-letter" class="rolling-letter">?</span></div>
+      <p style="color:var(--soft);font-size:1.1rem">Izvučeno slovo je:</p>
+    </div>
+    <div style="text-align:center">
+      <button class="btn btn-green" onclick="goToWriting()" style="font-size:1.1rem;padding:14px 40px">✏️ Kreni sa pisanjem!</button>
+    </div>
+  </div>
+
+  <!-- ══ WRITING ══ -->
+  <div class="screen" id="screen-writing">
+    <div class="round-badge" id="writing-round-lbl">🎯 Runda 1</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div><span style="font-size:1.1rem;color:var(--soft)">Slovo: </span>
+        <span id="writing-letter" style="font-family:'Fredoka One',cursive;font-size:2rem;color:var(--gold)">A</span></div>
+      <div class="timer-text" id="timer-text">2:00</div>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+    <div id="writing-categories" class="categories-grid"></div>
+    <div style="text-align:center;margin-top:20px">
+      <button class="btn btn-gold" onclick="submitAnswers()" id="btn-submit" style="font-size:1.1rem;padding:14px 40px">✅ Predaj odgovore</button>
+    </div>
+    <div class="submitted-chips" id="submitted-chips"></div>
+  </div>
+
+  <!-- ══ SCORING ══ -->
+  <div class="screen" id="screen-scoring">
+    <div class="round-badge" id="scoring-round-lbl">🎯 Runda 1</div>
+    <div class="section-title">📋 Pregled odgovora</div>
+    <p style="color:var(--soft);margin-bottom:16px;font-size:.9rem" id="scoring-sub"></p>
+    <div id="scoring-content"></div>
+    <div style="text-align:center;margin-top:24px" id="scoring-btns"></div>
+  </div>
+
+  <!-- ══ RESULTS ══ -->
+  <div class="screen" id="screen-results">
+    <div class="round-badge" id="results-round-lbl">📊 Nakon runde 1</div>
+    <div class="section-title">🏆 Trenutni plasman</div>
+    <div id="leaderboard"></div>
+    <div class="divider"></div>
+    <div style="text-align:center;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px" id="results-btns"></div>
+  </div>
+
+  <!-- ══ IMPOSTER LOBBY ══ -->
+  <div class="screen" id="screen-imposter-lobby">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <button class="btn btn-outline btn-sm" onclick="showScreen('home')">← Nazad</button>
+      <div><div style="font-family:'Fredoka One',cursive;font-size:1.4rem">🕵️ Imposter</div>
+        <div style="color:var(--soft);font-size:.82rem">Ko nije dobio istu reč?</div></div>
+    </div>
+    <div class="card"><h2>👥 Igrači</h2><div id="imposter-lobby-list"></div></div>
+
+    <!-- Admin: unos reči i pokretanje -->
+    <div id="imposter-admin-panel" style="display:none">
+      <div class="card">
+        <h2>⚙️ Podešavanja <span class="admin-badge">👑 Samo za tebe</span></h2>
+        <div style="margin-bottom:16px">
+          <div style="font-size:.8rem;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">🔤 Reč za ovu rundu</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="imposter-word-input" placeholder="Upiši reč..." style="flex:1;min-width:160px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.2);border-radius:12px;padding:12px 16px;color:white;font-family:'Nunito',sans-serif;font-size:1rem">
+            <button class="btn btn-outline btn-sm" onclick="randomImposterWord()">🎲 Random</button>
+          </div>
+        </div>
+        <div style="background:var(--deep);border-radius:12px;padding:14px;margin-bottom:16px;font-size:.88rem;color:var(--soft);line-height:1.6">
+          <b style="color:var(--text)">Kako radi:</b><br>
+          • Svi igrači dobijaju reč na telefonu<br>
+          • Jedan random igrač vidi <b style="color:var(--accent)">"Ti si Imposter!"</b><br>
+          • Razgovarajte uživo o reči<br>
+          • Otkrijte ko je Imposter!
+        </div>
+        <div style="text-align:center">
+          <button class="btn btn-primary" id="btn-imposter-start" onclick="adminStartImposter()" style="font-size:1.05rem;padding:14px 40px">🕵️ Podijeli uloge!</button>
+        </div>
+      </div>
+    </div>
+    <div id="imposter-non-admin-wait" style="display:none">
+      <div class="waiting-notice">⏳ Čekaj admina (<span id="imposter-admin-lbl">-</span>) da pokrene igru...</div>
+    </div>
+  </div>
+
+  <!-- ══ IMPOSTER ROLE SCREEN ══ -->
+  <div class="screen" id="screen-imposter-role">
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--soft);margin-bottom:24px">🕵️ Tvoja uloga</div>
+
+      <!-- Zaštita — tap da vidiš -->
+      <div id="role-cover" onclick="revealRole()" style="cursor:pointer">
+        <div style="background:var(--card);border-radius:24px;padding:40px 30px;border:2px dashed rgba(255,255,255,.2);max-width:360px;margin:0 auto">
+          <div style="font-size:4rem;margin-bottom:16px">👆</div>
+          <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;margin-bottom:8px">Tapni da vidiš ulogu</div>
+          <div style="color:var(--soft);font-size:.9rem">Pazi da niko ne gleda!</div>
+        </div>
+      </div>
+
+      <!-- Uloga (skrivena) -->
+      <div id="role-reveal" style="display:none;max-width:360px;margin:0 auto">
+        <div id="role-card-crewmate" style="display:none;background:linear-gradient(135deg,rgba(78,203,113,.2),rgba(79,195,247,.2));border-radius:24px;padding:40px 30px;border:2px solid rgba(78,203,113,.4)">
+          <div style="font-size:4rem;margin-bottom:12px">✅</div>
+          <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--green);margin-bottom:16px">Crewmate</div>
+          <div style="font-size:.9rem;color:var(--soft);margin-bottom:20px">Tvoja reč je:</div>
+          <div id="crewmate-word" style="font-family:'Fredoka One',cursive;font-size:3rem;color:var(--text);background:rgba(255,255,255,.1);border-radius:16px;padding:16px 24px;letter-spacing:2px"></div>
+          <div style="color:var(--soft);font-size:.85rem;margin-top:16px">Razgovarajte uživo i pronađite Impostera!</div>
+        </div>
+        <div id="role-card-imposter" style="display:none;background:linear-gradient(135deg,rgba(233,69,96,.2),rgba(179,136,255,.2));border-radius:24px;padding:40px 30px;border:2px solid rgba(233,69,96,.4)">
+          <div style="font-size:4rem;margin-bottom:12px">🕵️</div>
+          <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--accent);margin-bottom:16px">Ti si Imposter!</div>
+          <div style="background:rgba(233,69,96,.15);border-radius:14px;padding:16px;color:var(--soft);font-size:.9rem;line-height:1.6">
+            Ostali imaju tajnu reč.<br>Blefuj i ne daj se otkriti! 😈
+          </div>
+        </div>
+        <button class="btn btn-outline" onclick="hideRole()" style="margin-top:20px">🙈 Sakrij ulogu</button>
+      </div>
+
+      <div style="margin-top:32px">
+        <div style="color:var(--soft);font-size:.88rem;margin-bottom:12px">Kada završite razgovor:</div>
+        <div id="imposter-end-btns"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ IMPOSTER REVEAL ══ -->
+  <div class="screen" id="screen-imposter-reveal">
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-size:3rem;margin-bottom:8px">🎭</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.8rem;margin-bottom:24px;background:linear-gradient(135deg,var(--accent),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Otkrivanje!</div>
+
+      <div class="card" style="max-width:400px;margin:0 auto 16px">
+        <div style="font-size:.85rem;color:var(--soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700">Tajna reč bila je</div>
+        <div id="reveal-word" style="font-family:'Fredoka One',cursive;font-size:3rem;color:var(--gold)"></div>
+      </div>
+
+      <div class="card" style="max-width:400px;margin:0 auto 24px">
+        <div style="font-size:.85rem;color:var(--soft);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;font-weight:700">Imposter je bio</div>
+        <div id="reveal-imposter" style="font-family:'Fredoka One',cursive;font-size:2rem;color:var(--accent)"></div>
+        <div style="font-size:4rem;margin-top:8px">🕵️</div>
+      </div>
+
+      <div id="reveal-btns"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ════════════════════════════════════════════
+const CATEGORIES = [
+  {key:'drzava',   label:'Država',    emoji:'🌍'},
+  {key:'grad',     label:'Grad',      emoji:'🏙️'},
+  {key:'selo',     label:'Selo',      emoji:'🏡'},
+  {key:'reka',     label:'Reka',      emoji:'🌊'},
+  {key:'planina',  label:'Planina',   emoji:'⛰️'},
+  {key:'zivotinja',label:'Životinja', emoji:'🦁'},
+  {key:'biljka',   label:'Biljka',    emoji:'🌿'},
+  {key:'predmet',  label:'Predmet',   emoji:'📦'},
+  {key:'ime',      label:'Ime',       emoji:'👤'},
+];
+const LETTER_POOL = ['A','B','V','G','D','E','Ž','Z','I','K','L','M','N','O','P','R','S','T','U','F','H','C','Č','Š'];
+const AVATAR_COLORS = ['#e94560','#4fc3f7','#f5a623','#4ecb71','#b388ff','#ff8f00','#26c6da','#ef5350'];
+const SCORE_RULES = { same: 5, unique: 10, bonus: 20 };
+
+// STATE
+let ws = null;
+let me = { username: null, isAdmin: false };
+let currentAdminUser = null;
+let lobbyPlayers = [];
+let myLocked = false;
+let roundTime = 120;
+let gameRound = 0;
+let currentLetter = '';
+let gamePlayers = [];
+let totalScores = {};
+let pendingRoundScores = {};
+let submitted = new Set();
+let allAnswers = {};
+let catScores = {};
+let timerInterval = null;
+let myAnswers = {};
+
+// STARS
+const starsEl = document.getElementById('stars');
+for(let i=0;i<80;i++){
+  const s=document.createElement('div');s.className='star';
+  s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;animation-delay:${Math.random()*3}s;animation-duration:${2+Math.random()*3}s`;
+  starsEl.appendChild(s);
+}
+
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-'+id).classList.add('active'); }
+function setWsBar(state,msg){ const b=document.getElementById('wsBar'); b.className=state; b.textContent=msg; }
+function toast(msg,color='var(--blue)'){
+  const t=document.getElementById('toast'); t.textContent=msg; t.style.color=color; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ── WS ──
+function connectWS(){
+  setWsBar('connecting','🟡 Povezujem se...');
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = window.location.host;
+  ws = new WebSocket(`${protocol}//${host}/ws`);
+  ws.onopen = ()=>{ setWsBar('connected','🟢 Povezan'); send({type:'login', ime:me.username, lozinka:me._pwd}); };
+  ws.onmessage = e => handleMsg(JSON.parse(e.data));
+  ws.onerror = ()=>{ setWsBar('disconnected','🔴 Greška konekcije!'); showErr('Ne mogu se spojiti na server!'); };
+  ws.onclose = ()=>{ setWsBar('disconnected','🔴 Veza prekinuta — osvježi stranicu'); };
+}
+function send(data){ if(ws&&ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify(data)); }
+
+// ── MESSAGES ──
+function handleMsg(data){
+  if(data.type==='login_error'){ showErr(data.msg); return; }
+
+  if(data.type==='login_ok'){
+    me.isAdmin = data.isAdmin;
+    currentAdminUser = data.adminUser;
+    document.getElementById('header-uname').textContent = me.username + (me.isAdmin?' 👑':'');
+    document.getElementById('home-uname').textContent = me.username;
+    document.getElementById('main-header').classList.add('show');
+    showScreen('home');
+    if(me.isAdmin) toast('👑 Ti si admin jer si se prvi prijavio!','var(--gold)');
+  }
+
+  if(data.type==='players'){
+    lobbyPlayers = data.players;
+    currentAdminUser = data.adminUser;
+    me.isAdmin = me.username === currentAdminUser;
+    document.getElementById('header-uname').textContent = me.username + (me.isAdmin?' 👑':'');
+    updateLobbyUI();
+  }
+
+  if(data.type==='you_are_admin'){
+    me.isAdmin = true;
+    currentAdminUser = me.username;
+    document.getElementById('header-uname').textContent = me.username + ' 👑';
+    toast('👑 Ti si sada admin!','var(--gold)');
+    updateLobbyUI();
+  }
+
+  if(data.type==='kicked'){
+    alert(`🥾 ${data.msg}`);
+    doLogout();
+  }
+
+  if(data.type==='game_start'){
+    gamePlayers=data.players; currentLetter=data.letter; roundTime=data.roundTime;
+    gameRound=1; submitted=new Set(); myAnswers={}; pendingRoundScores={};
+    showRoundLetter();
+  }
+  if(data.type==='player_submitted'){ submitted.add(data.username); updateSubmitted(); }
+  if(data.type==='all_answers'){ allAnswers=data.answers; clearInterval(timerInterval); buildScoringScreen(); showScreen('scoring'); }
+  if(data.type==='scores_update'){
+    Object.entries(data.roundScores).forEach(([u,p])=>{ totalScores[u]=(totalScores[u]||0)+p; });
+    pendingRoundScores=data.roundScores; buildResultsScreen(); showScreen('results');
+  }
+  if(data.type==='new_round'){
+    gamePlayers=data.players; currentLetter=data.letter; roundTime=data.roundTime;
+    gameRound++; submitted=new Set(); myAnswers={}; pendingRoundScores={};
+    showRoundLetter();
+  }
+  if(data.type==='restart'){
+    totalScores={}; myLocked=false;
+    lobbyPlayers=data.players||[]; currentAdminUser=data.adminUser||currentAdminUser;
+    me.isAdmin=me.username===currentAdminUser;
+    updateLobbyUI(); showScreen('home');
+  }
+  if(data.type==='imposter_role'){
+    imposterState.myRole = data.role;
+    imposterState.myWord = data.word || null;
+    imposterState.players = data.players;
+    showImposterRole();
+  }
+  if(data.type==='imposter_reveal'){
+    imposterState.word = data.word;
+    imposterState.imposter = data.imposter;
+    showImposterReveal();
+  }
+}
+
+// ── LOGIN ──
+document.getElementById('login-password').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('login-username').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('login-password').focus(); });
+
+function doLogin(){
+  const username=document.getElementById('login-username').value.trim();
+  const password=document.getElementById('login-password').value;
+  if(!username||!password){ showErr('Popuni sva polja!'); return; }
+  document.getElementById('login-error').style.display='none';
+  me.username=username; me._pwd=password;
+  connectWS();
+}
+function showErr(msg){ const e=document.getElementById('login-error'); e.textContent=msg; e.style.display='block'; }
+
+function doLogout(){
+  send({type:'logout',username:me.username});
+  if(ws) ws.close();
+  me={username:null,isAdmin:false}; myLocked=false;
+  document.getElementById('main-header').classList.remove('show');
+  document.getElementById('login-username').value='';
+  document.getElementById('login-password').value='';
+  document.getElementById('login-error').style.display='none';
+  showScreen('login');
+}
+
+// ── LOBBY ──
+function enterLobby(){ showScreen('lobby'); updateLobbyUI(); }
+
+function updateLobbyUI(){
+  const list=document.getElementById('lobby-list'); list.innerHTML='';
+  lobbyPlayers.forEach((p,i)=>{
+    const color=AVATAR_COLORS[i%AVATAR_COLORS.length];
+    const isMe=p.username===me.username;
+    const isAdmin=p.username===currentAdminUser;
+    const row=document.createElement('div'); row.className='player-row';
+
+    // Admin action buttons (kick + make admin) — samo admin vidi, ne može kickovati sebe
+    let adminBtns='';
+    if(me.isAdmin && !isMe){
+      adminBtns=`
+        <button class="kick-btn" onclick="kickPlayer('${p.username}')">🥾 Kick</button>
+        <button class="makeadmin-btn" onclick="transferAdmin('${p.username}')">👑 Admin</button>`;
+    }
+
+    row.innerHTML=`
+      <div class="avatar" style="background:${color}20;color:${color};border:1.5px solid ${color}40">${p.username.slice(0,2).toUpperCase()}</div>
+      <div class="player-row-name">
+        ${p.username}
+        ${isAdmin?'<span class="admin-badge">👑 Admin</span>':''}
+        ${isMe?'<span style="color:var(--soft);font-size:.72rem;margin-left:5px">(ti)</span>':''}
+      </div>
+      <span class="status-chip ${p.locked?'chip-ready':'chip-wait'}">${p.locked?'✅ Spreman':'⏳ Čeka'}</span>
+      ${adminBtns}`;
+    list.appendChild(row);
+  });
+
+  // Lock button
+  const lockBtn=document.getElementById('btn-lock');
+  if(myLocked){ lockBtn.textContent='✅ Zaključan! (klikni da otključaš)'; lockBtn.className='btn btn-green'; }
+  else { lockBtn.textContent='🔓 Zaključaj se (spreman sam!)'; lockBtn.className='btn btn-blue'; }
+
+  // Admin panel / wait
+  const online=lobbyPlayers.length;
+  const locked=lobbyPlayers.filter(p=>p.locked).length;
+  const allReady=online>=2&&locked===online;
+
+  if(me.isAdmin){
+    document.getElementById('admin-panel').style.display='block';
+    document.getElementById('non-admin-wait').style.display='none';
+    document.getElementById('lobby-subtitle').textContent='Čekaonica — ti si admin 👑';
+    const startBtn=document.getElementById('btn-start');
+    startBtn.disabled=!allReady;
+    document.getElementById('start-hint').textContent=allReady?'✅ Svi su spremni!':`${locked}/${online} zaključano`;
+    document.getElementById('start-hint').style.color=allReady?'var(--green)':'var(--soft)';
+  } else {
+    document.getElementById('admin-panel').style.display='none';
+    document.getElementById('non-admin-wait').style.display='block';
+    document.getElementById('lobby-subtitle').textContent='Čekaonica';
+    document.getElementById('admin-name-lbl').textContent=currentAdminUser||'admin';
+  }
+}
+
+function sendToggleLock(){ myLocked=!myLocked; send({type:'toggle_lock',username:me.username,locked:myLocked}); }
+
+function kickPlayer(username){
+  if(!confirm(`Kick ${username}?`)) return;
+  send({type:'kick_player',username});
+}
+
+function transferAdmin(username){
+  if(!confirm(`Dati admin prava igraču ${username}?`)) return;
+  send({type:'transfer_admin',username});
+}
+
+// Time buttons
+document.querySelectorAll('.time-btn').forEach(btn=>{
+  btn.onclick=()=>{ document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active-time')); btn.classList.add('active-time'); roundTime=parseInt(btn.dataset.sec); };
+});
+
+function adminStartGame(){
+  const letter=LETTER_POOL[Math.floor(Math.random()*LETTER_POOL.length)];
+  send({type:'start_game',letter,roundTime});
+}
+
+// ── GAME ──
+function showRoundLetter(){
+  document.getElementById('round-lbl').textContent=`🎯 Runda ${gameRound}`;
+  const lEl=document.getElementById('drawn-letter');
+  lEl.textContent=currentLetter;
+  lEl.classList.remove('rolling-letter'); void lEl.offsetWidth; lEl.classList.add('rolling-letter');
+  showScreen('letter');
+}
+
+function goToWriting(){
+  document.getElementById('writing-round-lbl').textContent=`🎯 Runda ${gameRound}`;
+  document.getElementById('writing-letter').textContent=currentLetter;
+  const grid=document.getElementById('writing-categories'); grid.innerHTML='';
+  myAnswers={};
+  CATEGORIES.forEach(c=>{
+    myAnswers[c.key]='';
+    const item=document.createElement('div'); item.className='category-item';
+    item.innerHTML=`<div class="category-label"><span>${c.emoji}</span>${c.label}</div>
+      <input type="text" id="cat-${c.key}" placeholder="Na slovo ${currentLetter}..." autocomplete="off">`;
+    grid.appendChild(item);
+  });
+  document.querySelectorAll('[id^=cat-]').forEach(inp=>{ inp.oninput=()=>{ myAnswers[inp.id.replace('cat-','')]=inp.value; }; });
+  document.getElementById('btn-submit').disabled=false;
+  document.getElementById('submitted-chips').innerHTML='';
+  submitted=new Set();
+  showScreen('writing');
+  if(roundTime>0) startTimer();
+}
+
+function startTimer(){
+  let t=roundTime; updateTimer(t); clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{ t--; updateTimer(t); if(t<=0){ clearInterval(timerInterval); submitAnswers(); } },1000);
+}
+function updateTimer(t){
+  const m=Math.floor(t/60),s=t%60;
+  document.getElementById('timer-text').textContent=`${m}:${s.toString().padStart(2,'0')}`;
+  const pct=roundTime>0?(t/roundTime)*100:100;
+  document.getElementById('timer-fill').style.width=pct+'%';
+  if(pct<20) document.getElementById('timer-fill').style.background='var(--accent)';
+}
+
+function submitAnswers(){
+  clearInterval(timerInterval);
+  document.getElementById('btn-submit').disabled=true;
+  CATEGORIES.forEach(c=>{ const el=document.getElementById('cat-'+c.key); if(el){myAnswers[c.key]=el.value.trim(); el.disabled=true;} });
+  send({type:'submit_answers',username:me.username,answers:myAnswers});
+  submitted.add(me.username); updateSubmitted();
+}
+function updateSubmitted(){
+  const el=document.getElementById('submitted-chips');
+  el.innerHTML=`<span style="color:var(--soft);font-size:.85rem">Predali: ${submitted.size}/${gamePlayers.length}</span> `
+    +[...submitted].map(n=>`<span class="sub-chip">✓ ${n}</span>`).join('');
+}
+
+// ── SCORING ──
+function calcCatScores(){
+  catScores={};
+  gamePlayers.forEach(p=>{catScores[p]={};});
+  CATEGORIES.forEach(c=>{
+    const valid={};
+    gamePlayers.forEach(p=>{
+      const val=((allAnswers[p]||{})[c.key]||'').trim();
+      if(val&&val[0].toUpperCase()===currentLetter) valid[p]=val.toLowerCase();
+    });
+    const vals=Object.values(valid);
+    gamePlayers.forEach(p=>{
+      if(!valid[p]){catScores[p][c.key]=0;return;}
+      const sc=vals.filter(v=>v===valid[p]).length;
+      if(vals.length===1)      catScores[p][c.key]=SCORE_RULES.bonus;
+      else if(sc>1)            catScores[p][c.key]=SCORE_RULES.same;
+      else                     catScores[p][c.key]=SCORE_RULES.unique;
+    });
+  });
+}
+
+function getTotal(p){ return Object.values(catScores[p]||{}).reduce((a,b)=>a+b,0); }
+
+function buildScoringScreen(){
+  document.getElementById('scoring-round-lbl').textContent=`🎯 Runda ${gameRound}`;
+  calcCatScores();
+  const content=document.getElementById('scoring-content'); content.innerHTML='';
+
+  const table=document.createElement('div'); table.className='answers-review';
+  const cols=`140px ${gamePlayers.map(()=>'1fr').join(' ')}`;
+
+  // Header
+  const hdr=document.createElement('div');
+  hdr.style.cssText=`display:grid;grid-template-columns:${cols};gap:8px;padding:8px 0;border-bottom:2px solid rgba(255,255,255,.1);margin-bottom:4px`;
+  hdr.innerHTML=`<div style="font-size:.75rem;color:var(--soft);font-weight:700;text-transform:uppercase">Kategorija</div>`
+    +gamePlayers.map(p=>`<div style="font-weight:800;font-size:.9rem;text-align:center">${p}</div>`).join('');
+  table.appendChild(hdr);
+
+  // Category rows
+  CATEGORIES.forEach(c=>{
+    const valid={};
+    gamePlayers.forEach(p=>{
+      const val=((allAnswers[p]||{})[c.key]||'').trim();
+      if(val&&val[0].toUpperCase()===currentLetter) valid[p]=val;
+    });
+    const vals=Object.values(valid).map(v=>v.toLowerCase());
+
+    const row=document.createElement('div');
+    row.style.cssText=`display:grid;grid-template-columns:${cols};gap:8px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center`;
+
+    let html=`<div style="font-size:.82rem;color:var(--soft)">${c.emoji} ${c.label}</div>`;
+
+    gamePlayers.forEach(p=>{
+      const val=valid[p];
+      const pts=catScores[p][c.key];
+      if(!val){ html+=`<div style="text-align:center;color:rgba(255,255,255,.2);font-size:.85rem">—</div>`; return; }
+
+      const sc=vals.filter(v=>v===val.toLowerCase()).length;
+      let color,label;
+      if(vals.length===1){color='var(--green)';label='jedini!';}
+      else if(sc>1){color='var(--gold)';label='isti';}
+      else{color='var(--blue)';label='jedinstven';}
+
+      const origPts=vals.length===1?SCORE_RULES.bonus:sc>1?SCORE_RULES.same:SCORE_RULES.unique;
+
+      if(me.isAdmin){
+        html+=`<div style="text-align:center">
+          <div style="font-weight:700;font-size:.9rem">${val}</div>
+          <div id="pts-lbl-${p}-${c.key}" style="font-size:.75rem;color:${pts>0?color:'rgba(255,255,255,.3)'};font-weight:700;margin:2px 0">
+            ${pts>0?pts+' pts ('+label+')':'0 pts (poništeno)'}
+          </div>
+          <button id="pts-btn-${p}-${c.key}" onclick="toggleCat('${p}','${c.key}',${origPts},'${color}','${label}')"
+            style="padding:3px 10px;border-radius:50px;border:none;cursor:pointer;font-size:.74rem;font-weight:700;
+            background:${pts>0?'rgba(233,69,96,.2)':'rgba(78,203,113,.2)'};
+            color:${pts>0?'var(--accent)':'var(--green)'};
+            border:1px solid ${pts>0?'rgba(233,69,96,.3)':'rgba(78,203,113,.3)'}">
+            ${pts>0?'✕ Poništi':'↩ Vrati'}
+          </button>
+        </div>`;
+      } else {
+        html+=`<div style="text-align:center">
+          <div style="font-weight:700;font-size:.9rem">${val}</div>
+          <div style="font-size:.75rem;color:${pts>0?color:'rgba(255,255,255,.3)'};font-weight:700">${pts>0?pts+' pts':'0 pts'}</div>
+        </div>`;
+      }
+    });
+    row.innerHTML=html; table.appendChild(row);
+  });
+
+  // Totals row
+  const tot=document.createElement('div');
+  tot.style.cssText=`display:grid;grid-template-columns:${cols};gap:8px;padding:12px 0;border-top:2px solid rgba(255,255,255,.1);align-items:center`;
+  tot.innerHTML=`<div style="font-weight:800;color:var(--soft);font-size:.85rem">UKUPNO RUNDA</div>`
+    +gamePlayers.map(p=>`<div id="total-cell-${p}" style="text-align:center;font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--gold)">${getTotal(p)}</div>`).join('');
+  table.appendChild(tot);
+  content.appendChild(table);
+
+  const btns=document.getElementById('scoring-btns');
+  if(me.isAdmin){
+    document.getElementById('scoring-sub').textContent='Klikni Poništi ako odgovor nije validan';
+    btns.innerHTML=`<button class="btn btn-primary" onclick="adminFinishScoring()" style="font-size:1.1rem;padding:14px 40px">🏆 Zaključi rundu</button>`;
+  } else {
+    document.getElementById('scoring-sub').textContent='Admin provjerava odgovore...';
+    btns.innerHTML=`<div class="waiting-notice">⏳ Čekaj admina da zaključi rundu...</div>`;
+  }
+}
+
+function toggleCat(player,catKey,origPts,color,label){
+  const cur=catScores[player][catKey];
+  catScores[player][catKey]=cur>0?0:origPts;
+  const newVal=catScores[player][catKey];
+  const lbl=document.getElementById(`pts-lbl-${player}-${catKey}`);
+  const btn=document.getElementById(`pts-btn-${player}-${catKey}`);
+  if(lbl){ lbl.textContent=newVal>0?`${newVal} pts (${label})`:'0 pts (poništeno)'; lbl.style.color=newVal>0?color:'rgba(255,255,255,.3)'; }
+  if(btn){ btn.textContent=newVal>0?'✕ Poništi':'↩ Vrati'; btn.style.background=newVal>0?'rgba(233,69,96,.2)':'rgba(78,203,113,.2)'; btn.style.color=newVal>0?'var(--accent)':'var(--green)'; btn.style.borderColor=newVal>0?'rgba(233,69,96,.3)':'rgba(78,203,113,.3)'; }
+  const total=getTotal(player);
+  const cell=document.getElementById(`total-cell-${player}`);
+  if(cell) cell.textContent=total;
+}
+
+function adminFinishScoring(){
+  pendingRoundScores={};
+  gamePlayers.forEach(p=>{ pendingRoundScores[p]=getTotal(p); });
+  send({type:'finish_scoring',roundScores:pendingRoundScores});
+}
+
+// ── RESULTS ──
+function buildResultsScreen(){
+  document.getElementById('results-round-lbl').textContent=`📊 Nakon runde ${gameRound}`;
+  const sorted=gamePlayers.map(ime=>({ime,total:totalScores[ime]||0,round:pendingRoundScores[ime]||0})).sort((a,b)=>b.total-a.total);
+  const medals=['🥇','🥈','🥉'];
+  const lb=document.getElementById('leaderboard'); lb.innerHTML='';
+  sorted.forEach((p,rank)=>{
+    const item=document.createElement('div'); item.className='leaderboard-item'; item.style.animationDelay=(rank*.1)+'s';
+    item.innerHTML=`<div class="rank-badge">${medals[rank]||'#'+(rank+1)}</div>
+      <div class="lb-name">${p.ime}${p.ime===currentAdminUser?'<span class="admin-badge">👑</span>':''}</div>
+      <div style="text-align:right"><div class="lb-score">${p.total}</div>
+      <div style="font-size:.78rem;color:var(--soft)">+${p.round} ova runda</div></div>`;
+    lb.appendChild(item);
+  });
+  if(gameRound>1){
+    const hist=document.createElement('div'); hist.className='answers-review'; hist.style.marginTop='16px';
+    hist.innerHTML=`<h3>📈 Ukupan zbir</h3>`+sorted.map((p,i)=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span style="font-size:1.2rem">${medals[i]||'•'}</span>
+        <span style="flex:1;font-weight:700">${p.ime}</span>
+        <span style="font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--gold)">${p.total} pts</span>
+      </div>`).join('');
+    lb.appendChild(hist);
+  }
+  const btns=document.getElementById('results-btns');
+  if(me.isAdmin){
+    btns.innerHTML=`
+      <button class="btn btn-green" onclick="adminNextRound()" style="font-size:1.1rem;padding:14px 34px">🎲 Sledeća runda!</button>
+      <button class="btn btn-outline" onclick="adminEndGame()" style="font-size:1.1rem;padding:14px 34px">🏠 Završi igru</button>`;
+  } else {
+    btns.innerHTML=`<div class="waiting-notice">⏳ Čekaj admina da pokrene sledeću rundu...</div>`;
+  }
+}
+
+function adminNextRound(){
+  const letter=LETTER_POOL[Math.floor(Math.random()*LETTER_POOL.length)];
+  send({type:'next_round',letter,roundTime,players:gamePlayers});
+}
+function adminEndGame(){ send({type:'restart'}); totalScores={}; showScreen('home'); }
+function goHome(){ showScreen('home'); }
+
+
+// ══════════════════════════════════════════
+// IMPOSTER IGRA
+// ══════════════════════════════════════════
+
+const IMPOSTER_WORDS = [
+  'igla','lopta','stolica','telefon','auto','sunce','drvo','knjiga',
+  'cipela','kafa','prozor','sat','lampa','novac','pas','mačka',
+  'hleb','voda','more','planina','vetar','kiša','sneg','vatra',
+  'brod','avion','bicikl','muzika','film','slika','torba','kaput',
+  'ključ','ogledalo','šešir','rukavice','sveća','med','so','šećer'
+];
+
+let imposterState = {
+  players: [],
+  imposter: null,
+  word: null,
+  myRole: null, // 'crewmate' ili 'imposter'
+  myWord: null,
+};
+
+// Poruke iz servera za imposter
+
+function enterImposterLobby(){
+  imposterState = { players: [], imposter: null, word: null, myRole: null, myWord: null };
+  updateImposterLobbyUI();
+  showScreen('imposter-lobby');
+}
+
+function updateImposterLobbyUI(){
+  // Koristi iste lobbyPlayers iz geo igre
+  const list = document.getElementById('imposter-lobby-list'); list.innerHTML='';
+  lobbyPlayers.forEach((p,i)=>{
+    const color=AVATAR_COLORS[i%AVATAR_COLORS.length];
+    const isMe=p.username===me.username;
+    const isAdm=p.username===currentAdminUser;
+    const row=document.createElement('div'); row.className='player-row';
+    row.innerHTML=`
+      <div class="avatar" style="background:${color}20;color:${color};border:1.5px solid ${color}40">${p.username.slice(0,2).toUpperCase()}</div>
+      <div class="player-row-name">${p.username}${isAdm?'<span class="admin-badge">👑</span>':''}${isMe?'<span style="color:var(--soft);font-size:.72rem;margin-left:5px">(ti)</span>':''}</div>
+      <span class="status-chip chip-wait">🟢 Online</span>`;
+    list.appendChild(row);
+  });
+
+  if(me.isAdmin){
+    document.getElementById('imposter-admin-panel').style.display='block';
+    document.getElementById('imposter-non-admin-wait').style.display='none';
+  } else {
+    document.getElementById('imposter-admin-panel').style.display='none';
+    document.getElementById('imposter-non-admin-wait').style.display='block';
+    document.getElementById('imposter-admin-lbl').textContent=currentAdminUser||'admin';
+  }
+}
+
+function randomImposterWord(){
+  const w=IMPOSTER_WORDS[Math.floor(Math.random()*IMPOSTER_WORDS.length)];
+  document.getElementById('imposter-word-input').value=w;
+}
+
+function adminStartImposter(){
+  const word = document.getElementById('imposter-word-input').value.trim();
+  if(!word){ toast('Upiši reč!','var(--accent)'); return; }
+  const online = lobbyPlayers.filter(p=>p.online).map(p=>p.username);
+  if(online.length < 2){ toast('Potrebna su minimum 2 igrača!','var(--accent)'); return; }
+
+  // Random imposter
+  const imposterIdx = Math.floor(Math.random()*online.length);
+  const imposter = online[imposterIdx];
+
+  send({ type:'imposter_start', word, imposter, players: online });
+}
+
+// ── ROLE SCREEN ──
+function showImposterRole(){
+  // Sakrij ulogu dok ne tapne
+  document.getElementById('role-cover').style.display='block';
+  document.getElementById('role-reveal').style.display='none';
+  document.getElementById('role-card-crewmate').style.display='none';
+  document.getElementById('role-card-imposter').style.display='none';
+
+  // End buttons — samo admin vidi Otkrij
+  const endBtns = document.getElementById('imposter-end-btns');
+  if(me.isAdmin){
+    endBtns.innerHTML=`<button class="btn btn-primary" onclick="adminRevealImposter()" style="font-size:1.05rem;padding:14px 36px">🎭 Otkrij Impostera!</button>`;
+  } else {
+    endBtns.innerHTML=`<div class="waiting-notice" style="max-width:320px;margin:0 auto">⏳ Čekaj admina da otkrije Impostera...</div>`;
+  }
+
+  showScreen('imposter-role');
+}
+
+function revealRole(){
+  document.getElementById('role-cover').style.display='none';
+  document.getElementById('role-reveal').style.display='block';
+
+  if(imposterState.myRole==='imposter'){
+    document.getElementById('role-card-imposter').style.display='block';
+    document.getElementById('role-card-crewmate').style.display='none';
+  } else {
+    document.getElementById('role-card-crewmate').style.display='block';
+    document.getElementById('role-card-imposter').style.display='none';
+    document.getElementById('crewmate-word').textContent=imposterState.myWord||'';
+  }
+}
+
+function hideRole(){
+  document.getElementById('role-cover').style.display='block';
+  document.getElementById('role-reveal').style.display='none';
+}
+
+function adminRevealImposter(){
+  send({ type:'imposter_reveal_req' });
+}
+
+// ── REVEAL SCREEN ──
+function showImposterReveal(){
+  document.getElementById('reveal-word').textContent=imposterState.word||'?';
+  document.getElementById('reveal-imposter').textContent=imposterState.imposter||'?';
+
+  const btns=document.getElementById('reveal-btns');
+  if(me.isAdmin){
+    btns.innerHTML=`
+      <button class="btn btn-green" onclick="adminPlayImposterAgain()" style="font-size:1.05rem;padding:14px 34px;margin:6px">🔄 Igraj ponovo</button>
+      <button class="btn btn-outline" onclick="showScreen('home')" style="font-size:1.05rem;padding:14px 34px;margin:6px">🏠 Početna</button>`;
+  } else {
+    btns.innerHTML=`<button class="btn btn-outline" onclick="showScreen('home')" style="margin:6px">🏠 Početna</button>`;
+  }
+
+  showScreen('imposter-reveal');
+}
+
+function adminPlayImposterAgain(){
+  document.getElementById('imposter-word-input').value='';
+  imposterState={players:[],imposter:null,word:null,myRole:null,myWord:null};
+  showScreen('imposter-lobby');
+  updateImposterLobbyUI();
+}
+
+window.addEventListener('beforeunload',()=>{ send({type:'logout',username:me.username}); });
+</script>
+</body>
+</html>
